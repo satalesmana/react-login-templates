@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules/
+style-16.rar
 
 # Expo
 .expo/
@@ -41,3 +42,5 @@ example
 # generated native folders
 /ios
 /android
+
+
