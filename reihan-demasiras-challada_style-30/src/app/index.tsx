@@ -1,4 +1,4 @@
-import { Text, View, Pressable, Image } from "react-native";
+import { Text, View, Image } from "react-native";
 import { useRouter } from "expo-router";
 
 import CustomButton from "@/components/Button";
