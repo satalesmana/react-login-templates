@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
-import { text } from "@fortawesome/fontawesome-svg-core";
+import { faCircleCheck } from "@fortawesome/free-regular-svg-icons";
 
 import CustomButton from "@/components/Button";
 
@@ -36,11 +36,10 @@ export default function Login() {
             {/* Password */}
             <View>
               <Text className="text-base font-medium">Password</Text>
-              <TextInput
-                secureTextEntry={true}
-                placeholder="XXXXXXXX"
-                className="py-[14px] px-4 border border-[#BDBDBD] rounded-[4px] mt-[4px]"
-              />
+              <View className="py-[14px] px-4 border border-[#BDBDBD] rounded-[4px] mt-[4px] flex flex-row justify-between items-center gap-2">
+                <TextInput secureTextEntry={true} placeholder="XXXXXXXX" className="flex-1" />
+                <FontAwesomeIcon icon={faCircleCheck} color="#00A520" />
+              </View>
             </View>
           </View>
 
@@ -48,11 +47,16 @@ export default function Login() {
             <Text className="text-[#2752E7]">Forgot Password</Text>
             <Text className="text-[#2752E7]">Privacy Policy</Text>
           </View>
-          
+
           <View className="mt-[74px]">
             <CustomButton title="Login" onPress={handleHomePress} />
-            <Pressable className="bg-white mt-[34px] active:bg-gray-100 w-full h-[62px] flex items-center justify-center px-[15px] py-[10px] rounded-md border border-[#CFCFCF]" onPress={handleHomePress}>
-              <Text className="color-black font-bold text-[16px]">Connect to a wallet</Text>
+            <Pressable
+              className="bg-white mt-[34px] active:bg-gray-100 w-full h-[62px] flex items-center justify-center px-[15px] py-[10px] rounded-md border border-[#CFCFCF]"
+              onPress={handleHomePress}
+            >
+              <Text className="color-black font-bold text-[16px]">
+                Connect to a wallet
+              </Text>
             </Pressable>
           </View>
         </View>
