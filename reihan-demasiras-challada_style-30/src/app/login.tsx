@@ -25,7 +25,7 @@ export default function Login() {
           <Text className="mt-[48px] text-xl font-medium">Login to light</Text>
 
           <View className="mt-[46px] flex flex-col gap-[14px]">
-            {/* Email */}
+            
             <View>
               <Text className="text-base font-medium">Email</Text>
               <TextInput
@@ -33,10 +33,10 @@ export default function Login() {
                 className="py-[14px] px-4 border border-[#BDBDBD] rounded-[4px] mt-[4px]"
               />
             </View>
-            {/* Password */}
+            
             <View>
               <Text className="text-base font-medium">Password</Text>
-              <View className="py-[14px] px-4 border border-[#BDBDBD] rounded-[4px] mt-[4px] flex flex-row justify-between items-center gap-2">
+              <View className="py-[4px] px-4 border border-[#BDBDBD] rounded-[4px] mt-[4px] flex flex-row justify-between items-center gap-2">
                 <TextInput secureTextEntry={true} placeholder="XXXXXXXX" className="flex-1" />
                 <FontAwesomeIcon icon={faCircleCheck} color="#00A520" />
               </View>
