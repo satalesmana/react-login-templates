@@ -3,7 +3,7 @@ import { View, Text, Image } from 'react-native';
 export default function MainScreen() {
   const profile = [
     { label: 'Nama', value: 'Amelia Rahman' },
-    { label: 'Jurusan', value: 'Manajemen Informatika' },
+    { label: 'Jurusan', value: 'Manajemen Informatika (MI-24)' },
     { label: 'NIM', value: '240444020002' },
   ];
 
