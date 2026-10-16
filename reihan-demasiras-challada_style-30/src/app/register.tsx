@@ -7,7 +7,6 @@ import { faXmark, faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import { faCircleCheck } from "@fortawesome/free-regular-svg-icons";
 
 import { Checkbox } from "expo-checkbox";
-import { Host, LinearProgressIndicator } from "@expo/ui/jetpack-compose";
 
 import CustomButton from "@/components/Button";
 
