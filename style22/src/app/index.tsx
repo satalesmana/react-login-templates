@@ -1,53 +1,59 @@
-import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { MyButton } from "../components/MyButton";
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  StatusBar,
+  Dimensions,
+  Image,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+
+const { width } = Dimensions.get('window');
+
+const TEAL = '#457B7E';
 
 export default function WelcomeScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container} className="flex-1 bg-white justify-between p-6">
-      <View style={styles.header} className="items-center mt-12">
-        <View style={styles.iconCircle} className="w-24 h-24 rounded-full bg-indigo-50 items-center justify-center mb-6">
-          <Ionicons name="sparkles" size={44} color="#4F46E5" />
-        </View>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-        <Text style={styles.badge} className="text-xs uppercase font-bold tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full mb-3">
-          Style 22 Template
-        </Text>
-
-        <Text style={styles.title} className="text-3xl font-bold text-slate-900 text-center mb-3">
-          Temukan Pengalaman Baru
-        </Text>
-
-        <Text style={styles.subtitle} className="text-base text-slate-500 text-center px-4">
-          Aplikasi mobile modern dengan desain clean, elegan, dan siap digunakan untuk kebutuhan autentikasi Anda.
-        </Text>
+      {/* ─── Area Ilustrasi ─── */}
+      <View style={styles.illustrationArea}>
+        <Image
+          source={require('../../assets/images/welcome_characters.png')}
+          style={styles.illustrationImage}
+          resizeMode="contain"
+        />
       </View>
 
-      <View style={styles.footer} className="w-full pb-8">
-        <MyButton
-          title="Masuk ke Akun"
-          variant="primary"
-          onPress={() => router.push("/login")}
-          className="mb-3"
-        />
+      {/* ─── Area Konten Bawah ─── */}
+      <View style={styles.contentArea}>
+        <Text style={styles.title}>Welcome to AppName</Text>
+        <Text style={styles.subtitle}>
+          Lorem ipsum dolor elit elit elit Volupta consectetur adipisicing elit.
+          reprehenderit iusto .
+        </Text>
 
-        <MyButton
-          title="Daftar Akun Baru"
-          variant="outline"
-          onPress={() => router.push("/register")}
-        />
+        <TouchableOpacity
+          style={styles.primaryButton}
+          activeOpacity={0.85}
+          onPress={() => router.push('/register')}
+        >
+          <Text style={styles.primaryButtonText}>Create an Account</Text>
+        </TouchableOpacity>
 
-        <View style={styles.guestLink} className="mt-6 items-center">
-          <TouchableOpacity onPress={() => router.push("/main")}>
-            <Text style={styles.guestText} className="text-sm font-medium text-slate-500">
-              Lanjutkan sebagai Tamu &rarr;
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.outlineButton}
+          activeOpacity={0.85}
+          onPress={() => router.push('/login')}
+        >
+          <Text style={styles.outlineButtonText}>Login</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -56,60 +62,75 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    justifyContent: "space-between",
-    padding: 24,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'space-between',
   },
-  header: {
-    alignItems: "center",
-    marginTop: 48,
+  illustrationArea: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 36,
+    paddingBottom: 8,
   },
-  iconCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: "#EEF2FF",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
+  illustrationImage: {
+    width: Math.min(width * 0.9, 360),
+    height: '100%',
+    maxHeight: 380,
   },
-  badge: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#4F46E5",
-    backgroundColor: "#EEF2FF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    marginBottom: 12,
-    textTransform: "uppercase",
-    letterSpacing: 1,
+  contentArea: {
+    paddingHorizontal: 28,
+    paddingBottom: 40,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#0F172A",
-    textAlign: "center",
-    marginBottom: 12,
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#1A202C',
+    textAlign: 'center',
+    marginBottom: 10,
+    letterSpacing: 0.2,
   },
   subtitle: {
-    fontSize: 15,
-    color: "#64748B",
-    textAlign: "center",
-    lineHeight: 22,
-    paddingHorizontal: 16,
+    fontSize: 13,
+    color: '#718096',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 32,
+    paddingHorizontal: 12,
   },
-  footer: {
-    width: "100%",
-    paddingBottom: 24,
+  primaryButton: {
+    width: '100%',
+    backgroundColor: TEAL,
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginBottom: 14,
+    shadowColor: TEAL,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  guestLink: {
-    marginTop: 20,
-    alignItems: "center",
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
-  guestText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#64748B",
+  outlineButton: {
+    width: '100%',
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: TEAL,
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  outlineButtonText: {
+    color: TEAL,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });

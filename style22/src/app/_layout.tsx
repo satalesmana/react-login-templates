@@ -1,3 +1,4 @@
+import "../../../global.css";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
@@ -10,6 +11,7 @@ export default function Layout() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: "#FFFFFF" },
+          animation: "slide_from_right",
         }}
       >
         <Stack.Screen name="index" />

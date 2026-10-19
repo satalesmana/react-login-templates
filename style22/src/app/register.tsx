@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,184 +6,213 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
+  TextInput,
   KeyboardAvoidingView,
   Platform,
   Alert,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { MyInput } from "../components/MyInput";
-import { MyButton } from "../components/MyButton";
+  Dimensions,
+  Image,
+  StatusBar,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import Svg, { Path } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
+
+const TEAL = '#457B7E';
+const GRAY_LABEL = '#1F2937';
+const GRAY_ICON = '#94A3B8';
+const LINE_COLOR = '#E2E8F0';
+
+const SignUpTopDecor = () => (
+  <Svg
+    width={width}
+    height={165}
+    viewBox={`0 0 ${width} 165`}
+    style={StyleSheet.absoluteFillObject}
+  >
+    {/* Soft wave peeking below */}
+    <Path
+      d={`M0,0 L${width},0 L${width},135 Q${width * 0.45},175 0,115 Z`}
+      fill="#EFF5F5"
+    />
+    {/* Main teal top banner */}
+    <Path
+      d={`M-10,-10 L${width + 10},-10 L${width + 10},105 Q${width * 0.55},155 -10,85 Z`}
+      fill={TEAL}
+    />
+  </Svg>
+);
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [errorName, setErrorName] = useState("");
-  const [errorEmail, setErrorEmail] = useState("");
-  const [errorPassword, setErrorPassword] = useState("");
-  const [errorConfirm, setErrorConfirm] = useState("");
-
   const handleRegister = () => {
-    let valid = true;
-    setErrorName("");
-    setErrorEmail("");
-    setErrorPassword("");
-    setErrorConfirm("");
-
-    if (!fullName.trim()) {
-      setErrorName("Nama lengkap wajib diisi");
-      valid = false;
+    if (!email.trim() || !phone.trim() || !password || !confirm) {
+      Alert.alert('Perhatian', 'Semua field wajib diisi');
+      return;
     }
-
-    if (!email.trim()) {
-      setErrorEmail("Email wajib diisi");
-      valid = false;
-    } else if (!email.includes("@")) {
-      setErrorEmail("Format email tidak valid");
-      valid = false;
+    if (password !== confirm) {
+      Alert.alert('Perhatian', 'Konfirmasi password tidak cocok');
+      return;
     }
-
-    if (!password) {
-      setErrorPassword("Kata sandi wajib diisi");
-      valid = false;
-    } else if (password.length < 6) {
-      setErrorPassword("Kata sandi minimal 6 karakter");
-      valid = false;
-    }
-
-    if (password !== confirmPassword) {
-      setErrorConfirm("Konfirmasi kata sandi tidak cocok");
-      valid = false;
-    }
-
-    if (!agreeTerms) {
-      Alert.alert("Perhatian", "Anda harus menyetujui syarat & ketentuan");
-      valid = false;
-    }
-
-    if (!valid) return;
-
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      Alert.alert("Pendaftaran Berhasil", "Akun Anda telah berhasil dibuat!", [
-        { text: "Masuk", onPress: () => router.replace("/login") },
+      Alert.alert('Berhasil!', 'Akun berhasil dibuat.', [
+        { text: 'Masuk', onPress: () => router.replace('/login') },
       ]);
-    }, 1000);
+    }, 700);
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} className="flex-1 bg-white">
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor={TEAL} />
+
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Back button */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="arrow-back" size={24} color="#0F172A" />
-          </TouchableOpacity>
-
-          {/* Heading */}
-          <View style={styles.headerContainer} className="mb-6">
-            <Text style={styles.title} className="text-3xl font-extrabold text-slate-900 mb-2">
-              Daftar Akun
-            </Text>
-            <Text style={styles.subtitle} className="text-base text-slate-500">
-              Buat akun baru untuk mulai menjelajah
-            </Text>
+          {/* ── Teal Wave Header with "Sign up" in White ── */}
+          <View style={styles.headerContainer}>
+            <SignUpTopDecor />
+            <Text style={styles.headerTitle}>Sign up</Text>
           </View>
 
-          {/* Form */}
-          <View style={styles.formContainer} className="w-full">
-            <MyInput
-              label="Nama Lengkap"
-              placeholder="Contoh: Hamzah Fadhila"
-              icon="person-outline"
-              value={fullName}
-              onChangeText={setFullName}
-              error={errorName}
+          {/* ── 3D Character (Sitting on Chair, Right side of Card) ── */}
+          <View style={styles.characterWrapper}>
+            <Image
+              source={require('../../assets/images/register_character.png')}
+              style={styles.registerCharImage}
+              resizeMode="contain"
             />
+          </View>
 
-            <MyInput
-              label="Alamat Email"
-              placeholder="nama@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              icon="mail-outline"
-              value={email}
-              onChangeText={setEmail}
-              error={errorEmail}
-            />
+          {/* ── Form Card ── */}
+          <View style={styles.card}>
+            {/* Email Field */}
+            <View style={styles.fieldWrapper}>
+              <Text style={styles.label}>Email</Text>
+              <View style={styles.inputRow}>
+                <Ionicons name="mail-outline" size={18} color={GRAY_ICON} />
+                <View style={styles.verticalDivider} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="demo@email.com"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </View>
+              <View style={styles.bottomLine} />
+            </View>
 
-            <MyInput
-              label="Kata Sandi"
-              placeholder="Minimal 6 karakter"
-              isPassword
-              icon="lock-closed-outline"
-              value={password}
-              onChangeText={setPassword}
-              error={errorPassword}
-            />
+            {/* Phone No Field */}
+            <View style={styles.fieldWrapper}>
+              <Text style={styles.label}>Phone No</Text>
+              <View style={styles.inputRow}>
+                <Ionicons name="call-outline" size={18} color={GRAY_ICON} />
+                <View style={styles.verticalDivider} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="+91 000-00-000"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={setPhone}
+                />
+              </View>
+              <View style={styles.bottomLine} />
+            </View>
 
-            <MyInput
-              label="Konfirmasi Kata Sandi"
-              placeholder="Ulangi kata sandi"
-              isPassword
-              icon="shield-checkmark-outline"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              error={errorConfirm}
-            />
+            {/* Password Field */}
+            <View style={styles.fieldWrapper}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputRow}>
+                <Ionicons name="lock-closed-outline" size={18} color={GRAY_ICON} />
+                <View style={styles.verticalDivider} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="*********"
+                  placeholderTextColor="#94A3B8"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={18}
+                    color={GRAY_ICON}
+                  />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.bottomLine} />
+            </View>
 
-            {/* Terms checkbox */}
+            {/* Confirm Password Field */}
+            <View style={styles.fieldWrapper}>
+              <Text style={styles.label}>Confirm Password</Text>
+              <View style={styles.inputRow}>
+                <Ionicons name="lock-closed-outline" size={18} color={GRAY_ICON} />
+                <View style={styles.verticalDivider} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="*********"
+                  placeholderTextColor="#94A3B8"
+                  secureTextEntry={!showConfirm}
+                  value={confirm}
+                  onChangeText={setConfirm}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirm(!showConfirm)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <Ionicons
+                    name={showConfirm ? 'eye-outline' : 'eye-off-outline'}
+                    size={18}
+                    color={GRAY_ICON}
+                  />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.bottomLine} />
+            </View>
+
+            {/* Create an Account Button */}
             <TouchableOpacity
-              style={styles.termsRow}
-              onPress={() => setAgreeTerms(!agreeTerms)}
-              activeOpacity={0.7}
-              className="flex-row items-center mb-6"
+              style={styles.registerBtn}
+              onPress={handleRegister}
+              activeOpacity={0.85}
+              disabled={loading}
             >
-              <Ionicons
-                name={agreeTerms ? "checkbox" : "square-outline"}
-                size={20}
-                color={agreeTerms ? "#4F46E5" : "#94A3B8"}
-              />
-              <Text style={styles.termsText} className="ml-2 text-sm text-slate-600 flex-1">
-                Saya menyetujui <Text style={styles.termsLink}>Syarat & Ketentuan</Text> yang berlaku
+              <Text style={styles.registerBtnText}>
+                {loading ? 'Creating Account...' : 'Create an Account'}
               </Text>
             </TouchableOpacity>
 
-            {/* Submit Button */}
-            <MyButton
-              title="Buat Akun"
-              onPress={handleRegister}
-              loading={loading}
-              className="mb-6"
-            />
-
-            {/* Login Link */}
-            <View style={styles.footerRow} className="flex-row justify-center items-center mt-2 pb-6">
-              <Text style={styles.footerText} className="text-sm text-slate-500">
-                Sudah punya akun?{" "}
-              </Text>
-              <TouchableOpacity onPress={() => router.push("/login")}>
-                <Text style={styles.loginLink} className="text-sm font-bold text-indigo-600">
-                  Masuk di Sini
-                </Text>
+            {/* Footer */}
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>Already have an Account ! </Text>
+              <TouchableOpacity onPress={() => router.push('/login')}>
+                <Text style={styles.footerLink}>Login</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -194,71 +223,114 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  safe: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
   },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 24,
-    paddingTop: 16,
+  scroll: {
     flexGrow: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
+    paddingBottom: 36,
   },
   headerContainer: {
-    marginBottom: 24,
+    height: 130,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 10,
   },
-  title: {
-    fontSize: 30,
-    fontWeight: "800",
-    color: "#0F172A",
+  headerTitle: {
+    fontSize: 27,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+  characterWrapper: {
+    alignItems: 'flex-end',
+    paddingRight: 22,
+    marginBottom: -38,
+    zIndex: 10,
+  },
+  registerCharImage: {
+    width: 165,
+    height: 185,
+  },
+  card: {
+    marginHorizontal: 18,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#EEF5F5',
+  },
+  fieldWrapper: {
+    marginBottom: 14,
+  },
+  label: {
+    fontSize: 14,
+    color: GRAY_LABEL,
+    fontWeight: '600',
     marginBottom: 6,
   },
-  subtitle: {
-    fontSize: 15,
-    color: "#64748B",
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  formContainer: {
-    width: "100%",
+  verticalDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: '#CBD5E1',
+    marginHorizontal: 10,
   },
-  termsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  termsText: {
-    marginLeft: 8,
-    fontSize: 13,
-    color: "#475569",
+  textInput: {
     flex: 1,
+    fontSize: 14,
+    color: '#111827',
+    paddingVertical: 3,
   },
-  termsLink: {
-    color: "#4F46E5",
-    fontWeight: "600",
+  bottomLine: {
+    height: 1,
+    backgroundColor: LINE_COLOR,
+    marginTop: 7,
+  },
+  registerBtn: {
+    backgroundColor: TEAL,
+    height: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    marginBottom: 20,
+    shadowColor: TEAL,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  registerBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   footerRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingBottom: 24,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   footerText: {
-    fontSize: 14,
-    color: "#64748B",
+    fontSize: 13,
+    color: '#64748B',
   },
-  loginLink: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#4F46E5",
+  footerLink: {
+    fontSize: 13,
+    color: TEAL,
+    fontWeight: '700',
   },
 });

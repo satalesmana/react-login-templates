@@ -1,4 +1,5 @@
 {
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
@@ -10,11 +11,6 @@
     "noEmit": true,
     "isolatedModules": true,
     "strict": false,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
     "paths": {
       "@/*": [
         "./src/*"
@@ -25,7 +21,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-  ],
-  "extends": "expo/tsconfig.base"
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
+  ]
 }

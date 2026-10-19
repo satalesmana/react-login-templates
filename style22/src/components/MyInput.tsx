@@ -6,14 +6,20 @@ import {
   TouchableOpacity,
   TextInputProps,
   StyleSheet,
+  StyleProp,
+  ViewStyle,
+  TextStyle,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-interface MyInputProps extends TextInputProps {
+export interface MyInputProps extends TextInputProps {
   label?: string;
   icon?: keyof typeof Ionicons.glyphMap;
   isPassword?: boolean;
   error?: string;
+  containerStyle?: StyleProp<ViewStyle>;
+  inputStyle?: StyleProp<TextStyle>;
+  labelStyle?: StyleProp<TextStyle>;
 }
 
 export const MyInput: React.FC<MyInputProps> = ({
@@ -21,15 +27,19 @@ export const MyInput: React.FC<MyInputProps> = ({
   icon,
   isPassword = false,
   error,
+  containerStyle,
+  inputStyle,
+  labelStyle,
+  style,
   ...props
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <View style={styles.container} className="mb-4 w-full">
+    <View style={[styles.container, containerStyle]} className="mb-4 w-full">
       {label ? (
-        <Text style={styles.label} className="text-slate-700 text-sm font-medium mb-1.5">
+        <Text style={[styles.label, labelStyle]} className="text-slate-700 text-sm font-semibold mb-1.5">
           {label}
         </Text>
       ) : null}
@@ -44,7 +54,7 @@ export const MyInput: React.FC<MyInputProps> = ({
           error
             ? "border-rose-500"
             : isFocused
-            ? "border-indigo-600 bg-white"
+            ? "border-[#3B7A7A] bg-white"
             : "border-slate-200"
         }`}
       >
@@ -52,13 +62,13 @@ export const MyInput: React.FC<MyInputProps> = ({
           <Ionicons
             name={icon}
             size={20}
-            color={isFocused ? "#4F46E5" : "#94A3B8"}
+            color={isFocused ? "#3B7A7A" : "#94A3B8"}
             style={styles.icon}
           />
         )}
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, inputStyle, style]}
           className="flex-1 text-slate-800 text-base"
           placeholderTextColor="#94A3B8"
           secureTextEntry={isPassword && !showPassword}
@@ -97,9 +107,9 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   label: {
-    color: "#334155",
-    fontSize: 14,
-    fontWeight: "500",
+    color: "#1C2B33",
+    fontSize: 13,
+    fontWeight: "600",
     marginBottom: 6,
   },
   inputContainer: {
@@ -113,7 +123,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   inputFocused: {
-    borderColor: "#4F46E5",
+    borderColor: "#3B7A7A",
     backgroundColor: "#FFFFFF",
   },
   inputError: {

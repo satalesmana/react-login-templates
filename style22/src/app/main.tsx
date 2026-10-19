@@ -1,129 +1,390 @@
-import React from "react";
-import { View, Text, StyleSheet, SafeAreaView } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { MyButton } from "../components/MyButton";
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import Svg, { Path, Circle, G, Rect, Ellipse, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function MainScreen() {
+const { width } = Dimensions.get('window');
+
+const TEAL       = '#3B7A7A';
+const TEAL_DARK  = '#2D6464';
+const TEAL_LIGHT = '#EBF5F5';
+const DARK_TEXT  = '#1C2B33';
+const GRAY_TEXT  = '#718096';
+const CARD_BG    = '#FFFFFF';
+
+// ─── Profil Avatar SVG ───────────────────────────────────────────
+const ProfileAvatar = () => (
+  <Svg width={100} height={100} viewBox="0 0 100 100">
+    <Defs>
+      <LinearGradient id="avatarGrad" x1="0" y1="0" x2="0" y2="1">
+        <Stop offset="0" stopColor="#5BBFB5" />
+        <Stop offset="1" stopColor="#2D6464" />
+      </LinearGradient>
+    </Defs>
+    <Circle cx="50" cy="50" r="50" fill="url(#avatarGrad)" />
+    {/* Kepala */}
+    <Circle cx="50" cy="36" r="18" fill="#FDBCB4" />
+    {/* Rambut */}
+    <Path d="M32,30 Q50,14 68,30 Q68,18 50,12 Q32,18 32,30" fill="#2D1B00" />
+    {/* Badan/kaos */}
+    <Path d="M22,100 Q22,70 50,65 Q78,70 78,100" fill="#FFFFFF" opacity={0.9} />
+  </Svg>
+);
+
+// ─── Skill Chip ──────────────────────────────────────────────────
+const SkillChip: React.FC<{ label: string; icon: keyof typeof Ionicons.glyphMap }> = ({ label, icon }) => (
+  <View style={chipStyles.chip}>
+    <Ionicons name={icon} size={13} color={TEAL} style={{ marginRight: 5 }} />
+    <Text style={chipStyles.text}>{label}</Text>
+  </View>
+);
+
+const chipStyles = StyleSheet.create({
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: TEAL_LIGHT,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    margin: 4,
+    borderWidth: 1,
+    borderColor: '#C8E6E6',
+  },
+  text: { fontSize: 12, color: TEAL, fontWeight: '600' },
+});
+
+// ─── Info Row ────────────────────────────────────────────────────
+const InfoRow: React.FC<{
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+}> = ({ icon, label, value }) => (
+  <View style={infoStyles.row}>
+    <View style={infoStyles.iconBox}>
+      <Ionicons name={icon} size={16} color={TEAL} />
+    </View>
+    <View style={infoStyles.textBox}>
+      <Text style={infoStyles.label}>{label}</Text>
+      <Text style={infoStyles.value}>{value}</Text>
+    </View>
+  </View>
+);
+
+const infoStyles = StyleSheet.create({
+  row:     { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: TEAL_LIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  textBox: { flex: 1 },
+  label:   { fontSize: 11, color: GRAY_TEXT, marginBottom: 1 },
+  value:   { fontSize: 14, color: DARK_TEXT, fontWeight: '600' },
+});
+
+// ═══════════════════════════════════════════════════════════════
+export default function HomeScreen() {
   const router = useRouter();
 
+  const skills = [
+    { label: 'React Native', icon: 'phone-portrait-outline' },
+    { label: 'JavaScript',   icon: 'logo-javascript' },
+    { label: 'TypeScript',   icon: 'code-slash-outline' },
+    { label: 'PHP',          icon: 'server-outline' },
+    { label: 'MySQL',        icon: 'layers-outline' },
+    { label: 'HTML / CSS',   icon: 'globe-outline' },
+    { label: 'Expo',         icon: 'rocket-outline' },
+    { label: 'Git & GitHub', icon: 'git-branch-outline' },
+  ] as const;
+
+  const projects = [
+    {
+      title: 'ASLAP SPPG App',
+      desc: 'Aplikasi manajemen SPPG berbasis web menggunakan PHP Native & Google Apps Script.',
+      icon: 'briefcase-outline',
+    },
+    {
+      title: 'EcoGrid',
+      desc: 'Aplikasi edukasi lingkungan dengan fitur interaktif menggunakan Electron.js & Vite.',
+      icon: 'leaf-outline',
+    },
+    {
+      title: 'Style 22 – Login Template',
+      desc: 'Template autentikasi React Native Expo dengan desain modern & ilustrasi SVG karakter.',
+      icon: 'phone-portrait-outline',
+    },
+  ];
+
   return (
-    <SafeAreaView style={styles.container} className="flex-1 bg-slate-50 justify-between p-6">
-      <View style={styles.content} className="items-center mt-16 px-4">
-        <View style={styles.successBadge} className="w-20 h-20 rounded-full bg-emerald-100 items-center justify-center mb-6">
-          <Ionicons name="checkmark-circle" size={48} color="#10B981" />
+    <SafeAreaView style={styles.safe}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+      >
+        {/* ─── HEADER PROFIL ─── */}
+        <View style={styles.headerBg}>
+          <Svg
+            width={width}
+            height={240}
+            viewBox={`0 0 ${width} 240`}
+            style={StyleSheet.absoluteFillObject}
+          >
+            <Path
+              d={`M0,0 L${width},0 L${width},195 Q${width / 2},238 0,195 Z`}
+              fill={TEAL}
+            />
+          </Svg>
+
+          {/* Avatar */}
+          <View style={styles.avatarWrapper}>
+            <ProfileAvatar />
+          </View>
+
+          {/* Nama & Judul */}
+          <Text style={styles.profileName}>Hamzah Fadhila</Text>
+          <Text style={styles.profileTitle}>Mahasiswa – Manajemen Informatika</Text>
+
+          {/* Badge institusi */}
+          <View style={styles.institutionBadge}>
+            <Ionicons name="school-outline" size={13} color="#FFFFFF" style={{ marginRight: 5 }} />
+            <Text style={styles.institutionText}>Politeknik Negeri Jember</Text>
+          </View>
         </View>
 
-        <Text style={styles.title} className="text-2xl font-bold text-slate-900 text-center mb-2">
-          Autentikasi Berhasil!
-        </Text>
-
-        <Text style={styles.subtitle} className="text-sm text-slate-500 text-center mb-8">
-          Selamat datang di halaman utama Style 22. Template autentikasi Anda sudah berfungsi dengan baik.
-        </Text>
-
-        <View style={styles.infoCard} className="w-full bg-white p-5 rounded-2xl border border-slate-200 mb-6">
-          <Text style={styles.cardTitle} className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-            Informasi Proyek
+        {/* ─── TENTANG SAYA ─── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tentang Saya</Text>
+          <Text style={styles.aboutText}>
+            Halo! Saya <Text style={styles.boldText}>Hamzah Fadhila</Text>, mahasiswa aktif Program
+            Studi Manajemen Informatika di Politeknik Negeri Jember. Saya memiliki ketertarikan
+            besar di bidang pengembangan aplikasi mobile dan web.{'\n\n'}
+            Saya berpengalaman dalam membangun antarmuka pengguna yang modern dan responsif
+            menggunakan React Native, Expo, serta teknologi web seperti PHP dan JavaScript.
+            Saya selalu bersemangat untuk belajar teknologi baru dan mengaplikasikannya dalam
+            proyek nyata.
           </Text>
+        </View>
 
-          <View style={styles.infoRow} className="flex-row justify-between py-2 border-b border-slate-100">
-            <Text style={styles.infoLabel} className="text-sm text-slate-500">Nama Style</Text>
-            <Text style={styles.infoValue} className="text-sm font-semibold text-slate-800">Style 22</Text>
-          </View>
-
-          <View style={styles.infoRow} className="flex-row justify-between py-2 border-b border-slate-100">
-            <Text style={styles.infoLabel} className="text-sm text-slate-500">Branch</Text>
-            <Text style={styles.infoValue} className="text-sm font-semibold text-indigo-600">Hamzah-Fadhila</Text>
-          </View>
-
-          <View style={styles.infoRow} className="flex-row justify-between py-2">
-            <Text style={styles.infoLabel} className="text-sm text-slate-500">Framework</Text>
-            <Text style={styles.infoValue} className="text-sm font-semibold text-slate-800">Expo Router + NativeWind</Text>
+        {/* ─── INFORMASI PERSONAL ─── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Informasi</Text>
+          <View style={styles.card}>
+            <InfoRow icon="person-outline"       label="Nama Lengkap"   value="Hamzah Fadhila" />
+            <InfoRow icon="school-outline"        label="Institusi"      value="Politeknik Negeri Jember" />
+            <InfoRow icon="book-outline"          label="Program Studi"  value="Manajemen Informatika" />
+            <InfoRow icon="location-outline"      label="Lokasi"         value="Jawa Timur, Indonesia" />
+            <InfoRow icon="mail-outline"          label="Email"          value="hamzah.fadhila@example.com" />
+            <InfoRow icon="logo-github"           label="GitHub"         value="github.com/Hamzah06-fad" />
           </View>
         </View>
-      </View>
 
-      <View style={styles.footer} className="w-full pb-8">
-        <MyButton
-          title="Keluar (Sign Out)"
-          variant="outline"
-          onPress={() => router.replace("/")}
-        />
-      </View>
+        {/* ─── KEAHLIAN ─── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Keahlian</Text>
+          <View style={styles.chipsContainer}>
+            {skills.map((s) => (
+              <SkillChip key={s.label} label={s.label} icon={s.icon} />
+            ))}
+          </View>
+        </View>
+
+        {/* ─── PROYEK ─── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Proyek</Text>
+          {projects.map((p) => (
+            <View key={p.title} style={styles.projectCard}>
+              <View style={styles.projectIcon}>
+                <Ionicons name={p.icon as any} size={20} color={TEAL} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.projectTitle}>{p.title}</Text>
+                <Text style={styles.projectDesc}>{p.desc}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* ─── TOMBOL KELUAR ─── */}
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={() => router.replace('/')}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="log-out-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+          <Text style={styles.logoutText}>Keluar</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.footer}>Style 22 · Hamzah-Fadhila Branch</Text>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
-    justifyContent: "space-between",
-    padding: 24,
+    backgroundColor: '#F7FAFA',
   },
-  content: {
-    alignItems: "center",
-    marginTop: 64,
+  scroll: {
+    paddingBottom: 48,
   },
-  successBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#D1FAE5",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#0F172A",
-    textAlign: "center",
+  /* Header */
+  headerBg: {
+    height: 260,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 14,
-    color: "#64748B",
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 32,
-    paddingHorizontal: 12,
-  },
-  infoCard: {
-    width: "100%",
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  cardTitle: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#94A3B8",
-    textTransform: "uppercase",
-    letterSpacing: 1,
+  avatarWrapper: {
+    width: 102,
+    height: 102,
+    borderRadius: 51,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.6)',
     marginBottom: 12,
+    overflow: 'hidden',
+    zIndex: 2,
   },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+  profileName: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+    zIndex: 2,
   },
-  infoLabel: {
+  profileTitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 4,
+    zIndex: 2,
+  },
+  institutionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginTop: 10,
+    zIndex: 2,
+  },
+  institutionText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  /* Sections */
+  section: {
+    marginHorizontal: 20,
+    marginTop: 24,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: DARK_TEXT,
+    marginBottom: 14,
+    letterSpacing: 0.2,
+  },
+  aboutText: {
     fontSize: 14,
-    color: "#64748B",
+    color: GRAY_TEXT,
+    lineHeight: 22,
   },
-  infoValue: {
+  boldText: {
+    fontWeight: '700',
+    color: TEAL,
+  },
+  /* Info card */
+  card: {
+    backgroundColor: CARD_BG,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  /* Skills */
+  chipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginLeft: -4,
+  },
+  /* Projects */
+  projectCard: {
+    flexDirection: 'row',
+    backgroundColor: CARD_BG,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  projectIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: TEAL_LIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  projectTitle: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#0F172A",
+    fontWeight: '700',
+    color: DARK_TEXT,
+    marginBottom: 4,
+  },
+  projectDesc: {
+    fontSize: 12,
+    color: GRAY_TEXT,
+    lineHeight: 18,
+  },
+  /* Logout */
+  logoutBtn: {
+    flexDirection: 'row',
+    backgroundColor: TEAL_DARK,
+    marginHorizontal: 20,
+    marginTop: 28,
+    paddingVertical: 15,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: TEAL,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  logoutText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
   footer: {
-    width: "100%",
-    paddingBottom: 24,
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 12,
+    color: '#B0BEC5',
   },
 });
