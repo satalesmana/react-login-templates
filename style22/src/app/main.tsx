@@ -160,7 +160,7 @@ export default function HomeScreen() {
           {/* Badge institusi */}
           <View style={styles.institutionBadge}>
             <Ionicons name="school-outline" size={13} color="#FFFFFF" style={{ marginRight: 5 }} />
-            <Text style={styles.institutionText}>Politeknik Negeri Jember</Text>
+            <Text style={styles.institutionText}>Politeknik LP3I Jakarta</Text>
           </View>
         </View>
 
@@ -171,9 +171,9 @@ export default function HomeScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Tentang Saya</Text>
               <Text style={styles.aboutText}>
-                Halo! Saya <Text style={styles.boldText}>Hamzah Fadhila</Text>, mahasiswa aktif Program
-                Studi Manajemen Informatika di Politeknik Negeri Jember. Saya memiliki ketertarikan
-                besar di bidang pengembangan aplikasi mobile dan web.{'\n\n'}
+                Halo! Saya <Text style={styles.boldText}>Hamzah Fadhila</Text>, mahasiswa aktif di
+                Politeknik LP3I Jakarta. Saya memiliki ketertarikan besar di bidang pengembangan
+                aplikasi mobile dan web.{'\n\n'}
                 Saya berpengalaman dalam membangun antarmuka pengguna yang modern dan responsif
                 menggunakan React Native, Expo, serta teknologi web seperti PHP dan JavaScript.
                 Saya selalu bersemangat untuk belajar teknologi baru dan mengaplikasikannya dalam
@@ -186,9 +186,9 @@ export default function HomeScreen() {
               <Text style={styles.sectionTitle}>Informasi</Text>
               <View style={styles.card}>
                 <InfoRow icon="person-outline"       label="Nama Lengkap"   value="Hamzah Fadhila" />
-                <InfoRow icon="school-outline"        label="Institusi"      value="Politeknik Negeri Jember" />
+                <InfoRow icon="school-outline"        label="Institusi"      value="Politeknik LP3I Jakarta" />
                 <InfoRow icon="book-outline"          label="Program Studi"  value="Manajemen Informatika" />
-                <InfoRow icon="location-outline"      label="Lokasi"         value="Jawa Timur, Indonesia" />
+                <InfoRow icon="location-outline"      label="Lokasi"         value="Jakarta, Indonesia" />
                 <InfoRow icon="mail-outline"          label="Email"          value="hamzah.fadhila@example.com" />
                 <InfoRow icon="logo-github"           label="GitHub"         value="github.com/Hamzah06-fad" />
               </View>
