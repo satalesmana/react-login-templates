@@ -33,9 +33,9 @@ export default function RegisterScreen() {
               />
             </View>
 
-            {/* Input Name */}
+            {/* Input Name dengan Ikon Biru */}
             <View className="flex-row items-center border-b border-gray-300 py-2 mb-3">
-              <Ionicons name="person-outline" size={20} color="gray" className="mr-3" />
+              <Ionicons name="person-outline" size={20} color="#1d4ed8" className="mr-3" />
               <TextInput 
                 value={name}
                 onChangeText={setName}
@@ -45,9 +45,9 @@ export default function RegisterScreen() {
               <Ionicons name="checkmark-circle" size={20} color="blue" />
             </View>
 
-            {/* Input Email */}
+            {/* Input Email dengan Ikon Biru */}
             <View className="flex-row items-center border-b border-gray-300 py-2 mb-3">
-              <Ionicons name="mail-outline" size={20} color="gray" className="mr-3" />
+              <Ionicons name="mail-outline" size={20} color="#1d4ed8" className="mr-3" />
               <TextInput 
                 value={email}
                 onChangeText={setEmail}
@@ -57,9 +57,9 @@ export default function RegisterScreen() {
               <Ionicons name="checkmark-circle" size={20} color="blue" />
             </View>
 
-            {/* Input Password */}
+            {/* Input Password dengan Ikon Biru */}
             <View className="flex-row items-center border-b border-gray-300 py-2 mb-6">
-              <Ionicons name="lock-closed-outline" size={20} color="gray" className="mr-3" />
+              <Ionicons name="lock-closed-outline" size={20} color="#1d4ed8" className="mr-3" />
               <TextInput 
                 value={password}
                 onChangeText={setPassword}
@@ -72,10 +72,16 @@ export default function RegisterScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Menggunakan Komponen MyButton */}
+            {/* Tombol Submit mengirim data name & email ke halaman profile */}
             <MyButton 
               title="Submit" 
-              onPress={() => alert('Registrasi Berhasil!')} 
+              onPress={() => {
+                alert('Registrasi Berhasil!');
+                router.push({
+                  pathname: '/profile',
+                  params: { name: name, email: email }
+                });
+              }} 
             />
 
             <View className="flex-row justify-center items-center mt-2">

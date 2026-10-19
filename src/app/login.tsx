@@ -42,9 +42,9 @@ export default function LoginScreen() {
               />
             </View>
 
-            {/* Input Email */}
+            {/* Input Email dengan Logo Biru */}
             <View className="flex-row items-center border-b border-gray-300 py-2 mb-4">
-              <Ionicons name="mail-outline" size={20} color="gray" className="mr-3" />
+              <Ionicons name="mail-outline" size={20} color="#1d4ed8" className="mr-3" />
               <TextInput 
                 value={email}
                 onChangeText={setEmail}
@@ -54,9 +54,9 @@ export default function LoginScreen() {
               <Ionicons name="checkmark-circle" size={20} color="blue" />
             </View>
 
-            {/* Input Password */}
+            {/* Input Password dengan Logo Biru */}
             <View className="flex-row items-center border-b border-gray-300 py-2 mb-2">
-              <Ionicons name="lock-closed-outline" size={20} color="gray" className="mr-3" />
+              <Ionicons name="lock-closed-outline" size={20} color="#1d4ed8" className="mr-3" />
               <TextInput 
                 value={password}
                 onChangeText={setPassword}
