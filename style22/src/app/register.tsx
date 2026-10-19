@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Dimensions,
+  useWindowDimensions,
   Image,
   StatusBar,
 } from 'react-native';
@@ -18,14 +18,12 @@ import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
-
 const TEAL = '#457B7E';
 const GRAY_LABEL = '#1F2937';
 const GRAY_ICON = '#94A3B8';
 const LINE_COLOR = '#E2E8F0';
 
-const SignUpTopDecor = () => (
+const SignUpTopDecor: React.FC<{ width: number }> = ({ width }) => (
   <Svg
     width={width}
     height={165}
@@ -47,6 +45,7 @@ const SignUpTopDecor = () => (
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -88,132 +87,137 @@ export default function RegisterScreen() {
         >
           {/* ── Teal Wave Header with "Sign up" in White ── */}
           <View style={styles.headerContainer}>
-            <SignUpTopDecor />
+            <SignUpTopDecor width={width} />
             <Text style={styles.headerTitle}>Sign up</Text>
           </View>
 
-          {/* ── 3D Character (Sitting on Chair, Right side of Card) ── */}
-          <View style={styles.characterWrapper}>
-            <Image
-              source={require('../../assets/images/register_character.png')}
-              style={styles.registerCharImage}
-              resizeMode="contain"
-            />
-          </View>
-
-          {/* ── Form Card ── */}
-          <View style={styles.card}>
-            {/* Email Field */}
-            <View style={styles.fieldWrapper}>
-              <Text style={styles.label}>Email</Text>
-              <View style={styles.inputRow}>
-                <Ionicons name="mail-outline" size={18} color={GRAY_ICON} />
-                <View style={styles.verticalDivider} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="demo@email.com"
-                  placeholderTextColor="#94A3B8"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
+          {/* ── Responsive Form Container (Centered for Web/Tablet) ── */}
+          <View style={styles.centerWrapper}>
+            <View style={styles.formContainer}>
+              {/* ── 3D Character (Sitting on Chair, Right side of Card) ── */}
+              <View style={styles.characterWrapper}>
+                <Image
+                  source={require('../../assets/images/register_character.png')}
+                  style={styles.registerCharImage}
+                  resizeMode="contain"
                 />
               </View>
-              <View style={styles.bottomLine} />
-            </View>
 
-            {/* Phone No Field */}
-            <View style={styles.fieldWrapper}>
-              <Text style={styles.label}>Phone No</Text>
-              <View style={styles.inputRow}>
-                <Ionicons name="call-outline" size={18} color={GRAY_ICON} />
-                <View style={styles.verticalDivider} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="+91 000-00-000"
-                  placeholderTextColor="#94A3B8"
-                  keyboardType="phone-pad"
-                  value={phone}
-                  onChangeText={setPhone}
-                />
-              </View>
-              <View style={styles.bottomLine} />
-            </View>
+              {/* ── Form Card ── */}
+              <View style={styles.card}>
+                {/* Email Field */}
+                <View style={styles.fieldWrapper}>
+                  <Text style={styles.label}>Email</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="mail-outline" size={18} color={GRAY_ICON} />
+                    <View style={styles.verticalDivider} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="demo@email.com"
+                      placeholderTextColor="#94A3B8"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      value={email}
+                      onChangeText={setEmail}
+                    />
+                  </View>
+                  <View style={styles.bottomLine} />
+                </View>
 
-            {/* Password Field */}
-            <View style={styles.fieldWrapper}>
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.inputRow}>
-                <Ionicons name="lock-closed-outline" size={18} color={GRAY_ICON} />
-                <View style={styles.verticalDivider} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="*********"
-                  placeholderTextColor="#94A3B8"
-                  secureTextEntry={!showPassword}
-                  value={password}
-                  onChangeText={setPassword}
-                />
+                {/* Phone No Field */}
+                <View style={styles.fieldWrapper}>
+                  <Text style={styles.label}>Phone No</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="call-outline" size={18} color={GRAY_ICON} />
+                    <View style={styles.verticalDivider} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="+91 000-00-000"
+                      placeholderTextColor="#94A3B8"
+                      keyboardType="phone-pad"
+                      value={phone}
+                      onChangeText={setPhone}
+                    />
+                  </View>
+                  <View style={styles.bottomLine} />
+                </View>
+
+                {/* Password Field */}
+                <View style={styles.fieldWrapper}>
+                  <Text style={styles.label}>Password</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="lock-closed-outline" size={18} color={GRAY_ICON} />
+                    <View style={styles.verticalDivider} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="*********"
+                      placeholderTextColor="#94A3B8"
+                      secureTextEntry={!showPassword}
+                      value={password}
+                      onChangeText={setPassword}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    >
+                      <Ionicons
+                        name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                        size={18}
+                        color={GRAY_ICON}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.bottomLine} />
+                </View>
+
+                {/* Confirm Password Field */}
+                <View style={styles.fieldWrapper}>
+                  <Text style={styles.label}>Confirm Password</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="lock-closed-outline" size={18} color={GRAY_ICON} />
+                    <View style={styles.verticalDivider} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="*********"
+                      placeholderTextColor="#94A3B8"
+                      secureTextEntry={!showConfirm}
+                      value={confirm}
+                      onChangeText={setConfirm}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowConfirm(!showConfirm)}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    >
+                      <Ionicons
+                        name={showConfirm ? 'eye-outline' : 'eye-off-outline'}
+                        size={18}
+                        color={GRAY_ICON}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.bottomLine} />
+                </View>
+
+                {/* Create an Account Button */}
                 <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  style={styles.registerBtn}
+                  onPress={handleRegister}
+                  activeOpacity={0.85}
+                  disabled={loading}
                 >
-                  <Ionicons
-                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                    size={18}
-                    color={GRAY_ICON}
-                  />
+                  <Text style={styles.registerBtnText}>
+                    {loading ? 'Creating Account...' : 'Create an Account'}
+                  </Text>
                 </TouchableOpacity>
+
+                {/* Footer */}
+                <View style={styles.footerRow}>
+                  <Text style={styles.footerText}>Already have an Account ! </Text>
+                  <TouchableOpacity onPress={() => router.push('/login')}>
+                    <Text style={styles.footerLink}>Login</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={styles.bottomLine} />
-            </View>
-
-            {/* Confirm Password Field */}
-            <View style={styles.fieldWrapper}>
-              <Text style={styles.label}>Confirm Password</Text>
-              <View style={styles.inputRow}>
-                <Ionicons name="lock-closed-outline" size={18} color={GRAY_ICON} />
-                <View style={styles.verticalDivider} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="*********"
-                  placeholderTextColor="#94A3B8"
-                  secureTextEntry={!showConfirm}
-                  value={confirm}
-                  onChangeText={setConfirm}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowConfirm(!showConfirm)}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <Ionicons
-                    name={showConfirm ? 'eye-outline' : 'eye-off-outline'}
-                    size={18}
-                    color={GRAY_ICON}
-                  />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.bottomLine} />
-            </View>
-
-            {/* Create an Account Button */}
-            <TouchableOpacity
-              style={styles.registerBtn}
-              onPress={handleRegister}
-              activeOpacity={0.85}
-              disabled={loading}
-            >
-              <Text style={styles.registerBtnText}>
-                {loading ? 'Creating Account...' : 'Create an Account'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Footer */}
-            <View style={styles.footerRow}>
-              <Text style={styles.footerText}>Already have an Account ! </Text>
-              <TouchableOpacity onPress={() => router.push('/login')}>
-                <Text style={styles.footerLink}>Login</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -237,6 +241,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 10,
+    width: '100%',
   },
   headerTitle: {
     fontSize: 27,
@@ -244,9 +249,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.2,
   },
+  centerWrapper: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: 480,
+    paddingHorizontal: 16,
+  },
   characterWrapper: {
     alignItems: 'flex-end',
-    paddingRight: 22,
+    paddingRight: 16,
     marginBottom: -38,
     zIndex: 10,
   },
@@ -255,7 +269,7 @@ const styles = StyleSheet.create({
     height: 185,
   },
   card: {
-    marginHorizontal: 18,
+    width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: 32,
     paddingHorizontal: 24,

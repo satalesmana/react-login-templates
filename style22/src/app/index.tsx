@@ -6,55 +6,67 @@ import {
   SafeAreaView,
   TouchableOpacity,
   StatusBar,
-  Dimensions,
+  useWindowDimensions,
   Image,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-
-const { width } = Dimensions.get('window');
 
 const TEAL = '#457B7E';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* ─── Area Ilustrasi ─── */}
-      <View style={styles.illustrationArea}>
-        <Image
-          source={require('../../assets/images/welcome_characters.png')}
-          style={styles.illustrationImage}
-          resizeMode="contain"
-        />
-      </View>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.centerWrapper}>
+          <View style={styles.responsiveBox}>
+            {/* ─── Area Ilustrasi ─── */}
+            <View style={styles.illustrationArea}>
+              <Image
+                source={require('../../assets/images/welcome_characters.png')}
+                style={[
+                  styles.illustrationImage,
+                  { width: Math.min(width * 0.85, 360) },
+                ]}
+                resizeMode="contain"
+              />
+            </View>
 
-      {/* ─── Area Konten Bawah ─── */}
-      <View style={styles.contentArea}>
-        <Text style={styles.title}>Welcome to AppName</Text>
-        <Text style={styles.subtitle}>
-          Lorem ipsum dolor elit elit elit Volupta consectetur adipisicing elit.
-          reprehenderit iusto .
-        </Text>
+            {/* ─── Area Konten Bawah ─── */}
+            <View style={styles.contentArea}>
+              <Text style={styles.title}>Welcome to AppName</Text>
+              <Text style={styles.subtitle}>
+                Lorem ipsum dolor elit elit elit Volupta consectetur adipisicing elit.
+                reprehenderit iusto .
+              </Text>
 
-        <TouchableOpacity
-          style={styles.primaryButton}
-          activeOpacity={0.85}
-          onPress={() => router.push('/register')}
-        >
-          <Text style={styles.primaryButtonText}>Create an Account</Text>
-        </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                activeOpacity={0.85}
+                onPress={() => router.push('/register')}
+              >
+                <Text style={styles.primaryButtonText}>Create an Account</Text>
+              </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.outlineButton}
-          activeOpacity={0.85}
-          onPress={() => router.push('/login')}
-        >
-          <Text style={styles.outlineButtonText}>Login</Text>
-        </TouchableOpacity>
-      </View>
+              <TouchableOpacity
+                style={styles.outlineButton}
+                activeOpacity={0.85}
+                onPress={() => router.push('/login')}
+              >
+                <Text style={styles.outlineButtonText}>Login</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -63,24 +75,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    justifyContent: 'space-between',
   },
-  illustrationArea: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  centerWrapper: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 36,
+    paddingVertical: 20,
+  },
+  responsiveBox: {
+    width: '100%',
+    maxWidth: 480,
+    minHeight: 580,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
+  illustrationArea: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 16,
     paddingBottom: 8,
   },
   illustrationImage: {
-    width: Math.min(width * 0.9, 360),
-    height: '100%',
+    height: 320,
     maxHeight: 380,
   },
   contentArea: {
-    paddingHorizontal: 28,
-    paddingBottom: 40,
+    paddingHorizontal: 8,
+    paddingBottom: 24,
     alignItems: 'center',
   },
   title: {

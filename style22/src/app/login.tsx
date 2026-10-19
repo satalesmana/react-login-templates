@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Dimensions,
+  useWindowDimensions,
   Image,
   StatusBar,
 } from 'react-native';
@@ -18,26 +18,22 @@ import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
-
 const TEAL = '#457B7E';
 const GRAY_LABEL = '#1F2937';
 const GRAY_ICON = '#94A3B8';
 const LINE_COLOR = '#E2E8F0';
 
-const LoginTopDecor = () => (
+const LoginTopDecor: React.FC<{ width: number }> = ({ width }) => (
   <Svg
     width={width}
     height={160}
     viewBox={`0 0 ${width} 160`}
     style={StyleSheet.absoluteFillObject}
   >
-    {/* Soft curved wave below */}
     <Path
       d={`M0,0 L${width},0 L${width},65 Q${width * 0.65},145 0,75 Z`}
       fill="#EFF5F5"
     />
-    {/* Top-left organic teal blob */}
     <Path
       d="M-20,-20 C-10,95 40,115 80,105 C115,95 125,45 120,-20 Z"
       fill={TEAL}
@@ -47,6 +43,7 @@ const LoginTopDecor = () => (
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -80,106 +77,111 @@ export default function LoginScreen() {
         >
           {/* ── Top Header Decor & Title ── */}
           <View style={styles.headerContainer}>
-            <LoginTopDecor />
+            <LoginTopDecor width={width} />
             <Text style={styles.headerTitle}>Login</Text>
           </View>
 
-          {/* ── 3D Character (Sitting on Right side of Card) ── */}
-          <View style={styles.characterWrapper}>
-            <Image
-              source={require('../../assets/images/login_character.png')}
-              style={styles.loginCharImage}
-              resizeMode="contain"
-            />
-          </View>
-
-          {/* ── Form Card ── */}
-          <View style={styles.card}>
-            {/* Email Field */}
-            <View style={styles.fieldWrapper}>
-              <Text style={styles.label}>Email</Text>
-              <View style={styles.inputRow}>
-                <Ionicons name="mail-outline" size={18} color={GRAY_ICON} />
-                <View style={styles.verticalDivider} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="demo@email.com"
-                  placeholderTextColor="#94A3B8"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
+          {/* ── Responsive Form Container (Centered for Web/Tablet) ── */}
+          <View style={styles.centerWrapper}>
+            <View style={styles.formContainer}>
+              {/* ── 3D Character (Sitting on Right side of Card) ── */}
+              <View style={styles.characterWrapper}>
+                <Image
+                  source={require('../../assets/images/login_character.png')}
+                  style={styles.loginCharImage}
+                  resizeMode="contain"
                 />
               </View>
-              <View style={styles.bottomLine} />
-            </View>
 
-            {/* Password Field */}
-            <View style={styles.fieldWrapper}>
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.inputRow}>
-                <Ionicons name="lock-closed-outline" size={18} color={GRAY_ICON} />
-                <View style={styles.verticalDivider} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="*********"
-                  placeholderTextColor="#94A3B8"
-                  secureTextEntry={!showPassword}
-                  value={password}
-                  onChangeText={setPassword}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                    size={18}
-                    color={GRAY_ICON}
-                  />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.bottomLine} />
-            </View>
-
-            {/* Remember Me & Forgot Password */}
-            <View style={styles.optionRow}>
-              <TouchableOpacity
-                style={styles.rememberRow}
-                onPress={() => setRemember(!remember)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.checkbox, remember && styles.checkboxActive]}>
-                  {remember && <Ionicons name="checkmark" size={11} color="#FFF" />}
+              {/* ── Form Card ── */}
+              <View style={styles.card}>
+                {/* Email Field */}
+                <View style={styles.fieldWrapper}>
+                  <Text style={styles.label}>Email</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="mail-outline" size={18} color={GRAY_ICON} />
+                    <View style={styles.verticalDivider} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="demo@email.com"
+                      placeholderTextColor="#94A3B8"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      value={email}
+                      onChangeText={setEmail}
+                    />
+                  </View>
+                  <View style={styles.bottomLine} />
                 </View>
-                <Text style={styles.rememberText}>Remember Me</Text>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => Alert.alert('Forgot Password', 'Link reset telah dikirim ke email')}
-              >
-                <Text style={styles.forgotText}>Forgot Password?</Text>
-              </TouchableOpacity>
-            </View>
+                {/* Password Field */}
+                <View style={styles.fieldWrapper}>
+                  <Text style={styles.label}>Password</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="lock-closed-outline" size={18} color={GRAY_ICON} />
+                    <View style={styles.verticalDivider} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="*********"
+                      placeholderTextColor="#94A3B8"
+                      secureTextEntry={!showPassword}
+                      value={password}
+                      onChangeText={setPassword}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    >
+                      <Ionicons
+                        name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                        size={18}
+                        color={GRAY_ICON}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.bottomLine} />
+                </View>
 
-            {/* Login Button */}
-            <TouchableOpacity
-              style={styles.loginBtn}
-              onPress={handleLogin}
-              activeOpacity={0.85}
-              disabled={loading}
-            >
-              <Text style={styles.loginBtnText}>
-                {loading ? 'Loading...' : 'Login'}
-              </Text>
-            </TouchableOpacity>
+                {/* Remember Me & Forgot Password */}
+                <View style={styles.optionRow}>
+                  <TouchableOpacity
+                    style={styles.rememberRow}
+                    onPress={() => setRemember(!remember)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.checkbox, remember && styles.checkboxActive]}>
+                      {remember && <Ionicons name="checkmark" size={11} color="#FFF" />}
+                    </View>
+                    <Text style={styles.rememberText}>Remember Me</Text>
+                  </TouchableOpacity>
 
-            {/* Footer */}
-            <View style={styles.footerRow}>
-              <Text style={styles.footerText}>Don't have an Account ? </Text>
-              <TouchableOpacity onPress={() => router.push('/register')}>
-                <Text style={styles.footerLink}>Sign up</Text>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => Alert.alert('Forgot Password', 'Link reset telah dikirim ke email')}
+                  >
+                    <Text style={styles.forgotText}>Forgot Password?</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Login Button */}
+                <TouchableOpacity
+                  style={styles.loginBtn}
+                  onPress={handleLogin}
+                  activeOpacity={0.85}
+                  disabled={loading}
+                >
+                  <Text style={styles.loginBtnText}>
+                    {loading ? 'Loading...' : 'Login'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Footer */}
+                <View style={styles.footerRow}>
+                  <Text style={styles.footerText}>Don't have an Account ? </Text>
+                  <TouchableOpacity onPress={() => router.push('/register')}>
+                    <Text style={styles.footerLink}>Sign up</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
           </View>
         </ScrollView>
@@ -203,6 +205,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 10,
+    width: '100%',
   },
   headerTitle: {
     fontSize: 27,
@@ -210,9 +213,18 @@ const styles = StyleSheet.create({
     color: '#111827',
     letterSpacing: 0.2,
   },
+  centerWrapper: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: 480,
+    paddingHorizontal: 16,
+  },
   characterWrapper: {
     alignItems: 'flex-end',
-    paddingRight: 24,
+    paddingRight: 16,
     marginBottom: -38,
     zIndex: 10,
   },
@@ -221,7 +233,7 @@ const styles = StyleSheet.create({
     height: 165,
   },
   card: {
-    marginHorizontal: 18,
+    width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: 32,
     paddingHorizontal: 24,

@@ -6,13 +6,11 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import Svg, { Path, Circle, G, Rect, Ellipse, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Path, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-
-const { width } = Dimensions.get('window');
 
 const TEAL       = '#3B7A7A';
 const TEAL_DARK  = '#2D6464';
@@ -99,6 +97,7 @@ const infoStyles = StyleSheet.create({
 // ═══════════════════════════════════════════════════════════════
 export default function HomeScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
 
   const skills = [
     { label: 'React Native', icon: 'phone-portrait-outline' },
@@ -165,70 +164,75 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ─── TENTANG SAYA ─── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tentang Saya</Text>
-          <Text style={styles.aboutText}>
-            Halo! Saya <Text style={styles.boldText}>Hamzah Fadhila</Text>, mahasiswa aktif Program
-            Studi Manajemen Informatika di Politeknik Negeri Jember. Saya memiliki ketertarikan
-            besar di bidang pengembangan aplikasi mobile dan web.{'\n\n'}
-            Saya berpengalaman dalam membangun antarmuka pengguna yang modern dan responsif
-            menggunakan React Native, Expo, serta teknologi web seperti PHP dan JavaScript.
-            Saya selalu bersemangat untuk belajar teknologi baru dan mengaplikasikannya dalam
-            proyek nyata.
-          </Text>
-        </View>
+        {/* ─── Responsive Content Wrapper ─── */}
+        <View style={styles.centerWrapper}>
+          <View style={styles.contentContainer}>
+            {/* ─── TENTANG SAYA ─── */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Tentang Saya</Text>
+              <Text style={styles.aboutText}>
+                Halo! Saya <Text style={styles.boldText}>Hamzah Fadhila</Text>, mahasiswa aktif Program
+                Studi Manajemen Informatika di Politeknik Negeri Jember. Saya memiliki ketertarikan
+                besar di bidang pengembangan aplikasi mobile dan web.{'\n\n'}
+                Saya berpengalaman dalam membangun antarmuka pengguna yang modern dan responsif
+                menggunakan React Native, Expo, serta teknologi web seperti PHP dan JavaScript.
+                Saya selalu bersemangat untuk belajar teknologi baru dan mengaplikasikannya dalam
+                proyek nyata.
+              </Text>
+            </View>
 
-        {/* ─── INFORMASI PERSONAL ─── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Informasi</Text>
-          <View style={styles.card}>
-            <InfoRow icon="person-outline"       label="Nama Lengkap"   value="Hamzah Fadhila" />
-            <InfoRow icon="school-outline"        label="Institusi"      value="Politeknik Negeri Jember" />
-            <InfoRow icon="book-outline"          label="Program Studi"  value="Manajemen Informatika" />
-            <InfoRow icon="location-outline"      label="Lokasi"         value="Jawa Timur, Indonesia" />
-            <InfoRow icon="mail-outline"          label="Email"          value="hamzah.fadhila@example.com" />
-            <InfoRow icon="logo-github"           label="GitHub"         value="github.com/Hamzah06-fad" />
-          </View>
-        </View>
-
-        {/* ─── KEAHLIAN ─── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Keahlian</Text>
-          <View style={styles.chipsContainer}>
-            {skills.map((s) => (
-              <SkillChip key={s.label} label={s.label} icon={s.icon} />
-            ))}
-          </View>
-        </View>
-
-        {/* ─── PROYEK ─── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Proyek</Text>
-          {projects.map((p) => (
-            <View key={p.title} style={styles.projectCard}>
-              <View style={styles.projectIcon}>
-                <Ionicons name={p.icon as any} size={20} color={TEAL} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.projectTitle}>{p.title}</Text>
-                <Text style={styles.projectDesc}>{p.desc}</Text>
+            {/* ─── INFORMASI PERSONAL ─── */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Informasi</Text>
+              <View style={styles.card}>
+                <InfoRow icon="person-outline"       label="Nama Lengkap"   value="Hamzah Fadhila" />
+                <InfoRow icon="school-outline"        label="Institusi"      value="Politeknik Negeri Jember" />
+                <InfoRow icon="book-outline"          label="Program Studi"  value="Manajemen Informatika" />
+                <InfoRow icon="location-outline"      label="Lokasi"         value="Jawa Timur, Indonesia" />
+                <InfoRow icon="mail-outline"          label="Email"          value="hamzah.fadhila@example.com" />
+                <InfoRow icon="logo-github"           label="GitHub"         value="github.com/Hamzah06-fad" />
               </View>
             </View>
-          ))}
+
+            {/* ─── KEAHLIAN ─── */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Keahlian</Text>
+              <View style={styles.chipsContainer}>
+                {skills.map((s) => (
+                  <SkillChip key={s.label} label={s.label} icon={s.icon} />
+                ))}
+              </View>
+            </View>
+
+            {/* ─── PROYEK ─── */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Proyek</Text>
+              {projects.map((p) => (
+                <View key={p.title} style={styles.projectCard}>
+                  <View style={styles.projectIcon}>
+                    <Ionicons name={p.icon as any} size={20} color={TEAL} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.projectTitle}>{p.title}</Text>
+                    <Text style={styles.projectDesc}>{p.desc}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* ─── TOMBOL KELUAR ─── */}
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              onPress={() => router.replace('/')}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="log-out-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.logoutText}>Keluar</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.footer}>Style 22 · Hamzah-Fadhila Branch</Text>
+          </View>
         </View>
-
-        {/* ─── TOMBOL KELUAR ─── */}
-        <TouchableOpacity
-          style={styles.logoutBtn}
-          onPress={() => router.replace('/')}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="log-out-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-          <Text style={styles.logoutText}>Keluar</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.footer}>Style 22 · Hamzah-Fadhila Branch</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -288,9 +292,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  /* Center wrapper for responsiveness */
+  centerWrapper: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  contentContainer: {
+    width: '100%',
+    maxWidth: 600,
+    paddingHorizontal: 16,
+  },
   /* Sections */
   section: {
-    marginHorizontal: 20,
     marginTop: 24,
   },
   sectionTitle: {
@@ -363,7 +376,6 @@ const styles = StyleSheet.create({
   logoutBtn: {
     flexDirection: 'row',
     backgroundColor: TEAL_DARK,
-    marginHorizontal: 20,
     marginTop: 28,
     paddingVertical: 15,
     borderRadius: 30,
