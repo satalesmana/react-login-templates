@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "experiments": {
+      "typedRoutes": true
+    },
+    "name": "Expo Auth Travel",
+    "newArchEnabled": true,
+    "orientation": "portrait",
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-asset"
+    ],
+    "scheme": "expo-auth-travel",
+    "slug": "expo-auth-travel",
+    "splash": {
+      "backgroundColor": "#ffffff"
+    },
+    "userInterfaceStyle": "light",
+    "version": "1.0.0"
+  }
+}
