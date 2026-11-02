@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect, useRouter } from 'expo-router';
 import { Feather, Ionicons, MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
 import { JwtPayload } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   supabase,
   getLocalSessionUser,
@@ -128,7 +129,7 @@ export default function Index() {
     message: string;
   }>({ visible: false, message: '' });
 
-  // View state: 'input' or 'dashboard'
+  // Current view state: 'input' or 'dashboard'
   const [currentView, setCurrentView] = useState<'input' | 'dashboard'>('input');
   const [activeWallet, setActiveWallet] = useState<{
     name: string;
@@ -167,9 +168,44 @@ export default function Index() {
         setClaims(supabaseClaims);
         setLocalUser(storedUser);
         const currentUserId = (supabaseClaims?.sub as string) || storedUser?.id || '';
+
+        // Check if user already created / saved a wallet previously
+        const savedActive = await AsyncStorage.getItem(`@uts_active_wallet_${currentUserId}`);
         const { data } = await getDompetList(currentUserId);
         if (data && data.length > 0) {
           setSavedDompets(data);
+        }
+
+        if (savedActive) {
+          const parsed = JSON.parse(savedActive);
+          const matchedDesign =
+            CARD_DESIGNS.find((d) => d.id === parsed.design?.id || d.bgPrimary === parsed.design?.bgPrimary) ||
+            CARD_DESIGNS[0];
+          const matchedAccent =
+            ACCENT_OPTIONS.find((a) => a.id === parsed.accent?.id) || ACCENT_OPTIONS[0];
+
+          setActiveWallet({
+            name: parsed.name || 'Dompet Utama',
+            balance: parsed.balance || 0,
+            design: matchedDesign,
+            accent: matchedAccent,
+          });
+          // Langsung kunci ke dashboard utama, tidak bisa kembali ke pilih tema
+          setCurrentView('dashboard');
+        } else if (data && data.length > 0) {
+          // If already has wallet in DB, lock to dashboard
+          const first = data[0];
+          const matchedDesign =
+            CARD_DESIGNS.find((d) => d.bgPrimary === first.cardBackground) || CARD_DESIGNS[0];
+          const matchedAccent =
+            ACCENT_OPTIONS.find((a) => a.textColor === first.cardColor) || ACCENT_OPTIONS[0];
+          setActiveWallet({
+            name: first.name,
+            balance: first.balance,
+            design: matchedDesign,
+            accent: matchedAccent,
+          });
+          setCurrentView('dashboard');
         }
       })
       .finally(() => {
@@ -218,22 +254,6 @@ export default function Index() {
     setBalance((prev) => prev + amount);
   }
 
-  // Pilih Tema / Desain Langsung Buka Dashboard Tema Terpilih
-  function handleSelectThemeAndOpenDashboard(design: CardDesign) {
-    setSelectedDesignId(design.id);
-    setActiveWallet({
-      name: walletName.trim() || 'Dompet Utama',
-      balance: balance,
-      design: design,
-      accent: selectedAccent,
-    });
-    setLoadingAction({ visible: true, message: `Menerapkan tema ${design.name}...` });
-    setTimeout(() => {
-      setLoadingAction({ visible: false, message: '' });
-      setCurrentView('dashboard');
-    }, 400);
-  }
-
   async function handleSaveWallet() {
     setNotification(null);
     if (!walletName.trim()) {
@@ -247,7 +267,15 @@ export default function Index() {
 
     setLoadingAction({ visible: true, message: 'Menyimpan dompet ke Supabase...' });
 
-    const { data, error } = await insertDompet({
+    const newWalletData = {
+      name: walletName.trim(),
+      balance: balance,
+      design: selectedDesign,
+      accent: selectedAccent,
+    };
+
+    // Simpan ke Supabase
+    await insertDompet({
       userId: currentUserId,
       name: walletName.trim(),
       balance: balance,
@@ -255,66 +283,17 @@ export default function Index() {
       cardColor: selectedAccent.textColor,
     });
 
+    // Simpan status aktif ke AsyncStorage agar terkunci di Dashboard
+    await AsyncStorage.setItem(
+      `@uts_active_wallet_${currentUserId}`,
+      JSON.stringify(newWalletData)
+    );
+
+    setActiveWallet(newWalletData);
     setLoadingAction({ visible: false, message: '' });
 
-    if (error) {
-      setNotification({
-        message: 'Gagal menyimpan dompet: ' + error.message,
-        type: 'error',
-      });
-      return;
-    }
-
-    // Refresh list
-    const updated = await getDompetList(currentUserId);
-    if (updated.data) {
-      setSavedDompets(updated.data);
-    }
-
-    setActiveWallet({
-      name: walletName.trim(),
-      balance: balance,
-      design: selectedDesign,
-      accent: selectedAccent,
-    });
-
-    const successMsg = `Dompet "${walletName.trim()}" (Rp ${formatRupiah(balance)}) berhasil disimpan!`;
-    setNotification({
-      message: successMsg,
-      type: 'success',
-    });
-
-    // Otomatis langsung masuk ke menu dashboard dompet
-    setTimeout(() => {
-      setCurrentView('dashboard');
-    }, 500);
-  }
-
-  async function executeDelete(id: number | string, name: string) {
-    try {
-      setLoadingAction({ visible: true, message: 'Menghapus dompet...' });
-      await deleteDompet(id);
-      setSavedDompets((prev) => prev.filter((item) => String(item.id) !== String(id)));
-      const updated = await getDompetList(currentUserId);
-      if (updated.data) {
-        setSavedDompets(updated.data);
-      }
-      setNotification({
-        message: `Dompet "${name}" berhasil dihapus.`,
-        type: 'success',
-      });
-    } catch (err: any) {
-      setNotification({
-        message: 'Gagal menghapus dompet: ' + (err?.message || err),
-        type: 'error',
-      });
-    } finally {
-      setLoadingAction({ visible: false, message: '' });
-    }
-  }
-
-  function handleDeleteWallet(id: number | string, name: string) {
-    executeDelete(id, name);
+    // Langsung masuk dan kunci ke Dashboard (tidak bisa kembali ke pilih tema)
+    setCurrentView('dashboard');
   }
 
   async function handleCancelOrBack() {
@@ -328,36 +307,52 @@ export default function Index() {
     router.replace('/(auth)/sign-in');
   }
 
+  async function handleResetWalletTheme() {
+    // Tombol opsional jika user benar-benar ingin buat tema baru dari awal
+    Alert.alert(
+      'Ubah Tema Dompet',
+      'Apakah Anda ingin mengatur ulang tema dompet ini?',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Ubah Tema',
+          onPress: async () => {
+            await AsyncStorage.removeItem(`@uts_active_wallet_${currentUserId}`);
+            setCurrentView('input');
+          },
+        },
+      ]
+    );
+  }
+
   // ==========================================
-  // VIEW: DASHBOARD DOMPET AKTIF
+  // VIEW: DASHBOARD DOMPET UTAMA (TERKUNCI)
+  // Tidak ada tombol back ke pilih tema
   // ==========================================
   if (currentView === 'dashboard') {
     return (
       <SafeAreaView className="flex-1 bg-slate-50">
         <LoadingUI visible={loadingAction.visible} message={loadingAction.message} />
 
-        {/* Top Header Dashboard */}
+        {/* Top Header Dashboard Resmi */}
         <View className="flex-row items-center justify-between px-5 py-3.5 bg-white border-b border-slate-100">
           <View className="flex-row items-center">
-            <TouchableOpacity
-              onPress={() => setCurrentView('input')}
-              className="p-1.5 -ml-1.5 mr-2 rounded-full"
-              activeOpacity={0.7}
-            >
-              <Feather name="arrow-left" size={20} color="#0f172a" />
-            </TouchableOpacity>
+            <View className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 items-center justify-center mr-2.5">
+              <Ionicons name="wallet" size={17} color="#4f46e5" />
+            </View>
             <View>
-              <Text className="text-[16px] font-bold text-[#0f172a]">Dashboard Dompet</Text>
-              <Text className="text-[11px] text-[#64748b]">Tema: {activeWallet.design.name}</Text>
+              <Text className="text-[16px] font-extrabold text-[#0f172a]">Dashboard Dompet</Text>
+              <Text className="text-[11px] font-semibold text-emerald-600">● Aktif: {activeWallet.name}</Text>
             </View>
           </View>
 
           <TouchableOpacity
             onPress={handleCancelOrBack}
-            className="flex-row items-center bg-red-50 px-2.5 py-1.5 rounded-lg border border-red-200"
+            activeOpacity={0.7}
+            className="flex-row items-center bg-red-50 px-3 py-1.5 rounded-lg border border-red-200"
           >
             <Feather name="log-out" size={13} color="#dc2626" />
-            <Text className="text-[11px] font-bold text-red-600 ml-1">Logout</Text>
+            <Text className="text-[11.5px] font-bold text-red-600 ml-1">Keluar</Text>
           </TouchableOpacity>
         </View>
 
@@ -369,16 +364,16 @@ export default function Index() {
           }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Active Card with Selected Theme */}
+          {/* Kartu Dompet Pilihan User */}
           <View
             style={{
               backgroundColor: activeWallet.design.bgPrimary,
               borderRadius: 22,
               padding: 24,
-              marginBottom: 22,
+              marginBottom: 20,
               shadowColor: activeWallet.design.bgSecondary,
               shadowOffset: { width: 0, height: 12 },
-              shadowOpacity: 0.32,
+              shadowOpacity: 0.35,
               shadowRadius: 18,
               elevation: 10,
               overflow: 'hidden',
@@ -490,7 +485,7 @@ export default function Index() {
 
           {/* Quick Action Menus */}
           <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-5">
-            <Text className="text-[13px] font-bold text-[#1e293b] mb-3">Menu Cepat Dompet</Text>
+            <Text className="text-[13px] font-bold text-[#1e293b] mb-3">Menu Transaksi Cepat</Text>
             <View className="flex-row items-center justify-around">
               <TouchableOpacity
                 onPress={() => {
@@ -526,33 +521,36 @@ export default function Index() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => setCurrentView('input')}
+                onPress={() => Alert.alert('QRIS Bayar', 'Fitur scan QRIS siap digunakan')}
                 className="items-center"
               >
-                <View className="w-12 h-12 rounded-2xl bg-slate-100 items-center justify-center mb-1.5 border border-slate-200">
-                  <Feather name="edit-3" size={20} color="#334155" />
+                <View className="w-12 h-12 rounded-2xl bg-blue-50 items-center justify-center mb-1.5 border border-blue-100">
+                  <MaterialCommunityIcons name="qrcode-scan" size={20} color="#2563eb" />
                 </View>
-                <Text className="text-[11px] font-semibold text-slate-700">Ganti Tema</Text>
+                <Text className="text-[11px] font-semibold text-slate-700">Bayar</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Button to go back to edit/create wallet */}
-          <TouchableOpacity
-            onPress={() => setCurrentView('input')}
-            activeOpacity={0.8}
-            className="bg-indigo-600 rounded-xl py-3.5 items-center justify-center flex-row shadow-sm"
-          >
-            <Feather name="plus" size={17} color="#ffffff" />
-            <Text className="text-white font-bold text-sm ml-2">Buat / Edit Dompet Lain</Text>
-          </TouchableOpacity>
+          {/* Riwayat Transaksi Card */}
+          <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-[13px] font-bold text-[#1e293b]">Status Dompet</Text>
+              <Text className="text-[11px] text-emerald-600 font-semibold">Tersinkron Supabase</Text>
+            </View>
+            <View className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <Text className="text-xs text-slate-600">
+                Dompet Anda telah aktif dengan tema <Text className="font-bold text-slate-800">{activeWallet.design.name}</Text>. Semua pencatatan transaksi akan otomatis terhubung ke akun Anda.
+              </Text>
+            </View>
+          </View>
         </ScrollView>
       </SafeAreaView>
     );
   }
 
   // ==========================================
-  // VIEW: FORM INPUT / PILIH TEMA DOMPET
+  // VIEW: FORM INPUT / PEMILIHAN TEMA PERTAMA KALI
   // ==========================================
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -561,14 +559,7 @@ export default function Index() {
       {/* Top Header */}
       <View className="flex-row items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-white">
         <View className="flex-row items-center">
-          <TouchableOpacity
-            onPress={handleCancelOrBack}
-            className="p-1.5 -ml-1.5 mr-2 rounded-full"
-            activeOpacity={0.7}
-          >
-            <Feather name="chevron-left" size={22} color="#0f172a" />
-          </TouchableOpacity>
-          <Text className="text-[17px] font-bold text-[#0f172a]">Tambah Dompet</Text>
+          <Text className="text-[17px] font-bold text-[#0f172a]">Atur Dompet & Tema</Text>
         </View>
 
         <TouchableOpacity
@@ -837,13 +828,11 @@ export default function Index() {
             </View>
           </View>
 
-          {/* Section 3: Pilihan Desain Kartu (Klik tema langsung buka dashboard) */}
+          {/* Section 3: Pilihan Desain Kartu */}
           <View className="mb-5">
             <View className="flex-row items-center justify-between mb-2.5">
               <Text className="text-[13.5px] font-bold text-[#1e293b]">Pilihan Desain Kartu</Text>
-              <Text className="text-[11px] font-semibold text-indigo-600">
-                Pilih tema langsung masuk dashboard 👉
-              </Text>
+              <Text className="text-[11px] text-[#64748b]">{selectedDesign.name}</Text>
             </View>
 
             <View className="flex-row items-center justify-between">
@@ -853,7 +842,7 @@ export default function Index() {
                   <TouchableOpacity
                     key={design.id}
                     activeOpacity={0.8}
-                    onPress={() => handleSelectThemeAndOpenDashboard(design)}
+                    onPress={() => setSelectedDesignId(design.id)}
                     style={{
                       width: 56,
                       height: 56,
@@ -920,42 +909,7 @@ export default function Index() {
             </View>
           </View>
 
-          {/* Section 5: Integrasi Transaksi Otomatis Banner */}
-          <View
-            style={{
-              backgroundColor: '#f4f6fb',
-              borderRadius: 16,
-              padding: 16,
-              flexDirection: 'row',
-              alignItems: 'flex-start',
-              marginBottom: 20,
-            }}
-          >
-            <View
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 11,
-                backgroundColor: '#5ee9b5',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 13,
-              }}
-            >
-              <Ionicons name="swap-horizontal" size={20} color="#064e3b" />
-            </View>
-
-            <View className="flex-1">
-              <Text className="text-[12.5px] font-bold text-[#1e293b] mb-1">
-                Integrasi Transaksi Otomatis (Supabase)
-              </Text>
-              <Text className="text-[11.5px] text-[#64748b] leading-4">
-                Data dompet Anda akan disimpan ke tabel "dompet" di Supabase database secara real-time.
-              </Text>
-            </View>
-          </View>
-
-          {/* Bottom CTA Buttons */}
+          {/* Bottom CTA Button: Simpan dan Kunci Masuk Dashboard */}
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleSaveWallet}
@@ -974,76 +928,8 @@ export default function Index() {
             }}
           >
             <MaterialCommunityIcons name="credit-card-plus-outline" size={18} color="#ffffff" />
-            <Text className="text-white font-bold text-[14.5px] ml-2">Simpan ke Tabel Dompet</Text>
+            <Text className="text-white font-bold text-[14.5px] ml-2">Simpan & Buka Dashboard</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={handleCancelOrBack}
-            className="py-3.5 mt-1 items-center justify-center"
-          >
-            <Text className="text-[#334155] font-semibold text-[13.5px]">Batal / Logout</Text>
-          </TouchableOpacity>
-
-          {/* Section 6: Daftar Dompet Tersimpan (Tabel Dompet) */}
-          <View className="mt-6 pt-5 border-t border-slate-200">
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-[14px] font-bold text-[#0f172a]">
-                Daftar Tabel Dompet ({savedDompets.length})
-              </Text>
-              <Text className="text-[11px] text-[#64748b]">Tersimpan di Supabase</Text>
-            </View>
-
-            {savedDompets.length === 0 ? (
-              <View className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-4 items-center justify-center">
-                <Text className="text-xs text-slate-500">Belum ada dompet tersimpan di tabel.</Text>
-              </View>
-            ) : (
-              savedDompets.map((item, index) => (
-                <View
-                  key={item.id ? String(item.id) : index}
-                  style={{
-                    backgroundColor: item.cardBackground || '#2c2572',
-                    borderRadius: 14,
-                    padding: 14,
-                    marginBottom: 10,
-                  }}
-                  className="flex-row items-center justify-between"
-                >
-                  <TouchableOpacity
-                    onPress={() => {
-                      const matched = CARD_DESIGNS.find((d) => d.bgPrimary === item.cardBackground) || CARD_DESIGNS[0];
-                      setActiveWallet({
-                        name: item.name,
-                        balance: item.balance,
-                        design: matched,
-                        accent: selectedAccent,
-                      });
-                      setCurrentView('dashboard');
-                    }}
-                    className="flex-1 mr-3"
-                  >
-                    <Text style={{ color: item.cardColor || '#ffffff' }} className="text-[14px] font-bold">
-                      {item.name}
-                    </Text>
-                    <Text style={{ color: item.cardColor || '#ffffff', opacity: 0.9 }} className="text-[15px] font-extrabold mt-0.5">
-                      Rp {formatRupiah(item.balance)}
-                    </Text>
-                    <Text className="text-white/60 text-[10px] mt-0.5">Ketuk untuk buka dashboard 👉</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => item.id !== undefined && handleDeleteWallet(item.id, item.name)}
-                    activeOpacity={0.7}
-                    className="bg-red-500/80 hover:bg-red-600 px-3 py-2 rounded-xl flex-row items-center border border-red-300/40"
-                  >
-                    <Feather name="trash-2" size={15} color="#ffffff" />
-                    <Text className="text-white text-xs font-bold ml-1.5">Hapus</Text>
-                  </TouchableOpacity>
-                </View>
-              ))
-            )}
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
