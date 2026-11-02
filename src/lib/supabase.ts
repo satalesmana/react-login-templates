@@ -35,8 +35,20 @@ export interface LocalUser {
   password: string;
 }
 
+export interface DompetItem {
+  id?: number | string;
+  userId: string;
+  name: string;
+  balance: number;
+  cardBackground: string;
+  cardColor: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 const REGISTERED_USERS_KEY = '@uts_registered_users';
 const CURRENT_SESSION_KEY = '@uts_current_user';
+const LOCAL_DOMPET_KEY = '@uts_dompet_items';
 
 export async function saveRegisteredUser(user: Omit<LocalUser, 'id'>): Promise<LocalUser> {
   const normalizedEmail = user.email.trim().toLowerCase();
@@ -86,11 +98,92 @@ export async function clearLocalSessionUser(): Promise<void> {
   await AsyncStorage.removeItem(CURRENT_SESSION_KEY);
 }
 
+// ==========================================
+// CRUD Dompet Helpers (Supabase + Local fallback)
+// Sesuai panduan: https://satalesmana.github.io/blog/supabase/
+// ==========================================
+
+export async function insertDompet(item: DompetItem): Promise<{ data: DompetItem[] | null; error: any }> {
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('dompet')
+        .insert([
+          {
+            userId: item.userId,
+            name: item.name,
+            balance: item.balance,
+            cardBackground: item.cardBackground,
+            cardColor: item.cardColor,
+          },
+        ])
+        .select();
+
+      if (!error && data) {
+        return { data: data as DompetItem[], error: null };
+      }
+      console.warn('Supabase insert dompet error, falling back to local storage:', error);
+    } catch (err) {
+      console.warn('Supabase insert dompet exception, falling back to local storage:', err);
+    }
+  }
+
+  // Local fallback storage
+  const raw = await AsyncStorage.getItem(LOCAL_DOMPET_KEY);
+  const list: DompetItem[] = raw ? JSON.parse(raw) : [];
+  const newItem: DompetItem = {
+    ...item,
+    id: Date.now(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  list.unshift(newItem);
+  await AsyncStorage.setItem(LOCAL_DOMPET_KEY, JSON.stringify(list));
+  return { data: [newItem], error: null };
+}
+
+export async function getDompetList(userId?: string): Promise<{ data: DompetItem[] | null; error: any }> {
+  if (isSupabaseConfigured) {
+    try {
+      let query = supabase.from('dompet').select().order('balance', { ascending: false });
+      if (userId) {
+        query = query.eq('userId', userId);
+      }
+      const { data, error } = await query;
+      if (!error && data) {
+        return { data: data as DompetItem[], error: null };
+      }
+    } catch (err) {
+      console.warn('Supabase get dompet error, fallback to local:', err);
+    }
+  }
+
+  const raw = await AsyncStorage.getItem(LOCAL_DOMPET_KEY);
+  const list: DompetItem[] = raw ? JSON.parse(raw) : [];
+  const filtered = userId ? list.filter((i) => i.userId === userId) : list;
+  filtered.sort((a, b) => b.balance - a.balance);
+  return { data: filtered, error: null };
+}
+
+export async function deleteDompet(id: number | string): Promise<{ error: any }> {
+  if (isSupabaseConfigured) {
+    try {
+      const { error } = await supabase.from('dompet').delete().eq('id', id);
+      if (!error) return { error: null };
+    } catch (err) {
+      console.warn('Supabase delete error:', err);
+    }
+  }
+
+  const raw = await AsyncStorage.getItem(LOCAL_DOMPET_KEY);
+  let list: DompetItem[] = raw ? JSON.parse(raw) : [];
+  list = list.filter((i) => String(i.id) !== String(id));
+  await AsyncStorage.setItem(LOCAL_DOMPET_KEY, JSON.stringify(list));
+  return { error: null };
+}
+
 // Tells Supabase Auth to continuously refresh the session automatically
-// if the app is in the foreground. When this is added, you will continue
-// to receive `onAuthStateChange` events with the `TOKEN_REFRESHED` or
-// `SIGNED_OUT` event if the user's session is terminated. This should
-// only be registered once.
+// if the app is in the foreground.
 if (Platform.OS !== 'web') {
   AppState.addEventListener('change', (state) => {
     if (state === 'active') {

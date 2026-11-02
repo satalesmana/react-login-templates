@@ -19,6 +19,10 @@ import {
   getLocalSessionUser,
   clearLocalSessionUser,
   LocalUser,
+  DompetItem,
+  insertDompet,
+  getDompetList,
+  deleteDompet,
 } from '../lib/supabase';
 import { LoadingUI } from '../components/configuration/LoadingUI';
 
@@ -134,6 +138,9 @@ export default function Index() {
     type: 'error' | 'success';
   } | null>(null);
 
+  // Saved Dompet list from Supabase / Local
+  const [savedDompets, setSavedDompets] = useState<DompetItem[]>([]);
+
   useEffect(() => {
     Promise.all([
       supabase.auth
@@ -142,9 +149,14 @@ export default function Index() {
         .catch(() => null),
       getLocalSessionUser().catch(() => null),
     ])
-      .then(([supabaseClaims, storedUser]) => {
+      .then(async ([supabaseClaims, storedUser]) => {
         setClaims(supabaseClaims);
         setLocalUser(storedUser);
+        const currentUserId = (supabaseClaims?.sub as string) || storedUser?.id || '';
+        const { data } = await getDompetList(currentUserId);
+        if (data) {
+          setSavedDompets(data);
+        }
       })
       .finally(() => {
         setInitializing(false);
@@ -176,6 +188,7 @@ export default function Index() {
     return <Redirect href="/(auth)/welcome" />;
   }
 
+  const currentUserId = (claims?.sub as string) || localUser?.id || 'guest-user';
   const selectedDesign =
     CARD_DESIGNS.find((d) => d.id === selectedDesignId) || CARD_DESIGNS[0];
   const selectedAccent =
@@ -202,18 +215,63 @@ export default function Index() {
       return;
     }
 
-    setLoadingAction({ visible: true, message: 'Menyimpan dompet...' });
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    setLoadingAction({ visible: true, message: 'Menyimpan dompet ke Supabase...' });
+
+    // Sesuai materi insert dompet di Supabase:
+    // await supabase.from('dompet').insert([{ userId, name, balance, cardBackground, cardColor }])
+    const { data, error } = await insertDompet({
+      userId: currentUserId,
+      name: walletName.trim(),
+      balance: balance,
+      cardBackground: selectedDesign.bgPrimary,
+      cardColor: selectedAccent.textColor,
+    });
+
     setLoadingAction({ visible: false, message: '' });
 
-    const successMsg = `Dompet "${walletName.trim()}" dengan saldo Rp ${formatRupiah(
-      balance
-    )} berhasil disimpan!`;
+    if (error) {
+      setNotification({
+        message: 'Gagal menyimpan dompet: ' + error.message,
+        type: 'error',
+      });
+      return;
+    }
+
+    // Refresh list
+    const updated = await getDompetList(currentUserId);
+    if (updated.data) {
+      setSavedDompets(updated.data);
+    }
+
+    const successMsg = `Dompet "${walletName.trim()}" (Rp ${formatRupiah(balance)}) berhasil disimpan ke tabel dompet!`;
     setNotification({
       message: successMsg,
       type: 'success',
     });
     Alert.alert('Berhasil', successMsg);
+  }
+
+  async function handleDeleteWallet(id: number | string, name: string) {
+    Alert.alert('Hapus Dompet', `Yakin ingin menghapus dompet "${name}"?`, [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Hapus',
+        style: 'destructive',
+        onPress: async () => {
+          setLoadingAction({ visible: true, message: 'Menghapus dompet...' });
+          await deleteDompet(id);
+          const updated = await getDompetList(currentUserId);
+          if (updated.data) {
+            setSavedDompets(updated.data);
+          }
+          setLoadingAction({ visible: false, message: '' });
+          setNotification({
+            message: `Dompet "${name}" berhasil dihapus.`,
+            type: 'success',
+          });
+        },
+      },
+    ]);
   }
 
   async function handleCancelOrBack() {
@@ -232,15 +290,25 @@ export default function Index() {
       <LoadingUI visible={loadingAction.visible} message={loadingAction.message} />
 
       {/* Top Header */}
-      <View className="flex-row items-center px-5 py-3.5 border-b border-slate-100 bg-white">
+      <View className="flex-row items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-white">
+        <View className="flex-row items-center">
+          <TouchableOpacity
+            onPress={handleCancelOrBack}
+            className="p-1.5 -ml-1.5 mr-2 rounded-full"
+            activeOpacity={0.7}
+          >
+            <Feather name="chevron-left" size={22} color="#0f172a" />
+          </TouchableOpacity>
+          <Text className="text-[17px] font-bold text-[#0f172a]">Tambah Dompet</Text>
+        </View>
+
         <TouchableOpacity
           onPress={handleCancelOrBack}
-          className="p-1.5 -ml-1.5 mr-2 rounded-full"
-          activeOpacity={0.7}
+          className="flex-row items-center bg-red-50 px-2.5 py-1.5 rounded-lg border border-red-200"
         >
-          <Feather name="chevron-left" size={22} color="#0f172a" />
+          <Feather name="log-out" size={13} color="#dc2626" />
+          <Text className="text-[11px] font-bold text-red-600 ml-1">Keluar</Text>
         </TouchableOpacity>
-        <Text className="text-[17px] font-bold text-[#0f172a]">Tambah Dompet</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -700,7 +768,7 @@ export default function Index() {
               padding: 16,
               flexDirection: 'row',
               alignItems: 'flex-start',
-              marginBottom: 26,
+              marginBottom: 20,
             }}
           >
             <View
@@ -719,11 +787,10 @@ export default function Index() {
 
             <View className="flex-1">
               <Text className="text-[12.5px] font-bold text-[#1e293b] mb-1">
-                Integrasi Transaksi Otomatis
+                Integrasi Transaksi Otomatis (Supabase)
               </Text>
               <Text className="text-[11.5px] text-[#64748b] leading-4">
-                Dompet ini siap ditautkan ke akun Anda untuk pencatatan riwayat Cash-In (CI) dan
-                Cash-Out (CO) secara real-time.
+                Data dompet Anda akan disimpan ke tabel "dompet" di Supabase database secara real-time.
               </Text>
             </View>
           </View>
@@ -751,7 +818,7 @@ export default function Index() {
               size={18}
               color="#ffffff"
             />
-            <Text className="text-white font-bold text-[14.5px] ml-2">Simpan Dompet</Text>
+            <Text className="text-white font-bold text-[14.5px] ml-2">Simpan ke Tabel Dompet</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -759,8 +826,59 @@ export default function Index() {
             onPress={handleCancelOrBack}
             className="py-3.5 mt-1 items-center justify-center"
           >
-            <Text className="text-[#334155] font-semibold text-[13.5px]">Batal</Text>
+            <Text className="text-[#334155] font-semibold text-[13.5px]">Batal / Logout</Text>
           </TouchableOpacity>
+
+          {/* Section 6: Daftar Dompet Tersimpan (Tabel Dompet) */}
+          <View className="mt-6 pt-5 border-t border-slate-200">
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-[14px] font-bold text-[#0f172a]">
+                Daftar Tabel Dompet ({savedDompets.length})
+              </Text>
+              <Text className="text-[11px] text-[#64748b]">Tersimpan di Supabase</Text>
+            </View>
+
+            {savedDompets.length === 0 ? (
+              <View className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-4 items-center justify-center">
+                <Text className="text-xs text-slate-500">Belum ada dompet tersimpan di tabel.</Text>
+              </View>
+            ) : (
+              savedDompets.map((item, index) => (
+                <View
+                  key={item.id ? String(item.id) : index}
+                  style={{
+                    backgroundColor: item.cardBackground || '#2c2572',
+                    borderRadius: 14,
+                    padding: 14,
+                    marginBottom: 10,
+                  }}
+                  className="flex-row items-center justify-between"
+                >
+                  <View className="flex-1 mr-3">
+                    <Text
+                      style={{ color: item.cardColor || '#ffffff' }}
+                      className="text-[14px] font-bold"
+                    >
+                      {item.name}
+                    </Text>
+                    <Text
+                      style={{ color: item.cardColor || '#ffffff', opacity: 0.9 }}
+                      className="text-[15px] font-extrabold mt-0.5"
+                    >
+                      Rp {formatRupiah(item.balance)}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => item.id && handleDeleteWallet(item.id, item.name)}
+                    className="bg-white/20 p-2 rounded-lg"
+                  >
+                    <Feather name="trash-2" size={15} color="#ffffff" />
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
