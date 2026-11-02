@@ -8,6 +8,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -16,22 +18,25 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 import MyTextInput from "@/components/MyTextInput";
 import MyButton from "@/components/MyButton";
-import { authService } from "@/services/authStore";
+import { supabase } from "../../lib/supabase";
 
 export default function LoginScreen() {
   const router = useRouter();
 
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  
+  // Modal states: "idle" | "loading" | "success" | "error"
+  const [modalType, setModalType] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [modalErrorMessage, setModalErrorMessage] = useState("");
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setErrorMsg("");
 
-    if (!username.trim()) {
-      setErrorMsg("Silakan masukkan Username atau Email");
+    if (!email.trim()) {
+      setErrorMsg("Silakan masukkan Email");
       return;
     }
     if (!password) {
@@ -39,39 +44,30 @@ export default function LoginScreen() {
       return;
     }
 
-    setLoading(true);
+    try {
+      setModalType("loading");
 
-    setTimeout(() => {
-      try {
-        const user = authService.login(username, password);
-        setLoading(false);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
 
-        if (user.role === "admin") {
-          Alert.alert(
-            "Login Berhasil (Admin)",
-            `Selamat datang Administrator! Anda memiliki akses penuh.`,
-            [{ text: "OK", onPress: () => router.replace("/dashboard") }]
-          );
-        } else {
-          Alert.alert(
-            "Login Berhasil (User)",
-            `Selamat datang kembali, ${user.fullName}!`,
-            [{ text: "OK", onPress: () => router.replace("/dashboard") }]
-          );
-        }
-      } catch (err: any) {
-        setLoading(false);
-        const msg = err?.message || "Login gagal, silakan periksa data Anda.";
-        setErrorMsg(msg);
-        Alert.alert("Gagal Login", msg);
+      if (error) {
+        throw new Error(error.message);
       }
-    }, 400);
+
+      setModalType("success");
+    } catch (err: any) {
+      console.error("[handleLogin]", err);
+      setModalErrorMessage(err?.message || "Login gagal, silakan periksa data Anda.");
+      setModalType("error");
+    }
   };
 
   const handleForgotPassword = () => {
     Alert.alert(
       "Forgot Password",
-      "Untuk reset password atau demo admin:\nUsername: admin\nPassword: 12345678"
+      "Silakan hubungi administrator atau gunakan reset password melalui Supabase Auth."
     );
   };
 
@@ -105,13 +101,14 @@ export default function LoginScreen() {
 
           <View style={styles.form}>
             <MyTextInput
-              label="Username"
-              placeholder="Username or Email"
-              value={username}
+              label="Email"
+              placeholder="example@gmail.com"
+              value={email}
               onChangeText={(text) => {
-                setUsername(text);
+                setEmail(text);
                 if (errorMsg) setErrorMsg("");
               }}
+              keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -166,7 +163,7 @@ export default function LoginScreen() {
                 text="Login"
                 btnType="primary"
                 action={handleLogin}
-                loading={loading}
+                loading={modalType === "loading"}
               />
             </View>
 
@@ -192,6 +189,75 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Modal Popup Loading / Success / Error */}
+      <Modal
+        visible={modalType !== "idle"}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (modalType !== "loading") {
+            setModalType("idle");
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            {modalType === "loading" && (
+              <View style={styles.modalContent}>
+                <View style={styles.modalIconContainer}>
+                  <ActivityIndicator size="large" color="#DEC39A" />
+                </View>
+                <Text style={styles.modalTitle}>Masuk ke Akun...</Text>
+                <Text style={styles.modalSubtitle}>
+                  Mohon tunggu sebentar, kami sedang memverifikasi kredensial Anda.
+                </Text>
+              </View>
+            )}
+
+            {modalType === "success" && (
+              <View style={styles.modalContent}>
+                <View style={[styles.modalIconContainer, styles.successIconBg]}>
+                  <FontAwesome name="check-circle" size={48} color="#DEC39A" />
+                </View>
+                <Text style={styles.modalTitle}>Login Berhasil!</Text>
+                <Text style={styles.modalSubtitle}>
+                  Selamat datang kembali! Anda akan diarahkan ke Dashboard.
+                </Text>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={() => {
+                    setModalType("idle");
+                    router.replace("/dashboard");
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalButtonText}>Buka Dashboard</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {modalType === "error" && (
+              <View style={styles.modalContent}>
+                <View style={[styles.modalIconContainer, styles.errorIconBg]}>
+                  <FontAwesome name="exclamation-circle" size={48} color="#F87171" />
+                </View>
+                <Text style={styles.modalTitle}>Gagal Login</Text>
+                <Text style={styles.modalSubtitle}>
+                  {modalErrorMessage || "Terjadi kesalahan, silakan coba lagi."}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.errorButton]}
+                  onPress={() => setModalType("idle")}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.modalButtonText, { color: "#FFFFFF" }]}>Coba Lagi</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -340,5 +406,90 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 3,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(5, 15, 30, 0.75)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: "#163869",
+    borderRadius: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 22,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(222, 195, 154, 0.35)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  modalContent: {
+    width: "100%",
+    alignItems: "center",
+  },
+  modalIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(222, 195, 154, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "rgba(222, 195, 154, 0.3)",
+  },
+  successIconBg: {
+    backgroundColor: "rgba(222, 195, 154, 0.18)",
+    borderColor: "#DEC39A",
+  },
+  errorIconBg: {
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    borderColor: "rgba(239, 68, 68, 0.4)",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: 8,
+    textAlign: "center",
+    letterSpacing: 0.3,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: "#D1D5DB",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 22,
+  },
+  modalButton: {
+    backgroundColor: "#DEC39A",
+    width: "100%",
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalButtonText: {
+    color: "#111827",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  errorButton: {
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
 });

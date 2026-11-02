@@ -5,9 +5,10 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -16,7 +17,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 import MyTextInput from "@/components/MyTextInput";
 import MyButton from "@/components/MyButton";
-import { authService } from "@/services/authStore";
+import { supabase } from "../../lib/supabase";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -25,14 +26,17 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  
+  // Modal state: "idle" | "loading" | "success" | "error"
+  const [modalType, setModalType] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [modalErrorMessage, setModalErrorMessage] = useState("");
 
-  const handleRegister = () => {
+  const onSubmitRegister = async () => {
     setErrorMsg("");
 
     if (!fullName.trim()) {
-      setErrorMsg("Silakan isi Full Name");
+      setErrorMsg("Silakan masukkan Full Name");
       return;
     }
     if (!email.trim() || !email.includes("@")) {
@@ -43,45 +47,34 @@ export default function RegisterScreen() {
       setErrorMsg("Password minimal 6 karakter");
       return;
     }
-    if (!phone.trim()) {
-      setErrorMsg("Silakan isi Phone No");
-      return;
-    }
 
-    setLoading(true);
+    try {
+      setModalType("loading");
 
-    setTimeout(() => {
-      try {
-        const username = email.split("@")[0].toLowerCase();
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            phone: phone.trim(),
+          },
+        },
+      });
 
-        authService.register({
-          username,
-          fullName: fullName.trim(),
-          email: email.trim().toLowerCase(),
-          phone: phone.trim(),
-          password,
-          role: "user",
-        });
-
-        setLoading(false);
-
-        Alert.alert(
-          "Registrasi Berhasil!",
-          `Akun untuk ${fullName} berhasil dibuat sebagai User. Silakan login.`,
-          [
-            {
-              text: "Login Sekarang",
-              onPress: () => router.push("/login"),
-            },
-          ]
-        );
-      } catch (err: any) {
-        setLoading(false);
-        const msg = err?.message || "Gagal mendaftar, silakan coba lagi.";
-        setErrorMsg(msg);
-        Alert.alert("Gagal Registrasi", msg);
+      if (error) {
+        throw new Error(error.message);
       }
-    }, 400);
+
+      setModalType("success");
+    } catch (error: any) {
+      console.error("[onSubmitRegister]", error);
+      setModalErrorMessage(error?.message || "Gagal membuat akun. Silakan coba lagi.");
+      setModalType("error");
+    }
   };
 
   return (
@@ -116,10 +109,7 @@ export default function RegisterScreen() {
               label="Full Name"
               placeholder="Your Full Name"
               value={fullName}
-              onChangeText={(text) => {
-                setFullName(text);
-                if (errorMsg) setErrorMsg("");
-              }}
+              onChangeText={setFullName}
               autoCapitalize="words"
             />
 
@@ -127,10 +117,7 @@ export default function RegisterScreen() {
               label="Email"
               placeholder="example@gmail.com"
               value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (errorMsg) setErrorMsg("");
-              }}
+              onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -141,10 +128,7 @@ export default function RegisterScreen() {
               placeholder="Create password"
               secureTextEntry
               value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (errorMsg) setErrorMsg("");
-              }}
+              onChangeText={setPassword}
               autoCapitalize="none"
             />
 
@@ -152,10 +136,7 @@ export default function RegisterScreen() {
               label="Phone No"
               placeholder="08xxxxxxxxxx"
               value={phone}
-              onChangeText={(text) => {
-                setPhone(text);
-                if (errorMsg) setErrorMsg("");
-              }}
+              onChangeText={setPhone}
               keyboardType="phone-pad"
             />
 
@@ -169,8 +150,8 @@ export default function RegisterScreen() {
               <MyButton
                 text="Sign Up"
                 btnType="primary"
-                action={handleRegister}
-                loading={loading}
+                action={onSubmitRegister}
+                loading={modalType === "loading"}
               />
             </View>
 
@@ -186,6 +167,77 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Modal Popup Loading / Success / Error */}
+      <Modal
+        visible={modalType !== "idle"}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (modalType !== "loading") {
+            setModalType("idle");
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            {modalType === "loading" && (
+              <View style={styles.modalContent}>
+                <View style={styles.modalIconContainer}>
+                  <ActivityIndicator size="large" color="#DEC39A" />
+                </View>
+                <Text style={styles.modalTitle}>Membuat Akun...</Text>
+                <Text style={styles.modalSubtitle}>
+                  Mohon tunggu sebentar, kami sedang memproses pendaftaran Anda.
+                </Text>
+              </View>
+            )}
+
+            {modalType === "success" && (
+              <View style={styles.modalContent}>
+                <View style={[styles.modalIconContainer, styles.successIconBg]}>
+                  <FontAwesome name="check-circle" size={48} color="#DEC39A" />
+                </View>
+                <Text style={styles.modalTitle}>Sukses Buat Akun!</Text>
+                <Text style={styles.modalSubtitle}>
+                  Akun Anda berhasil didaftarkan. Silakan check email Anda (
+                  <Text style={styles.boldEmail}>{email}</Text>
+                  ) untuk verifikasi akun sebelum login.
+                </Text>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={() => {
+                    setModalType("idle");
+                    router.replace("/login");
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalButtonText}>Ke Halaman Login</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {modalType === "error" && (
+              <View style={styles.modalContent}>
+                <View style={[styles.modalIconContainer, styles.errorIconBg]}>
+                  <FontAwesome name="exclamation-circle" size={48} color="#F87171" />
+                </View>
+                <Text style={styles.modalTitle}>Gagal Mendaftar</Text>
+                <Text style={styles.modalSubtitle}>
+                  {modalErrorMessage || "Terjadi kesalahan, silakan coba lagi."}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.errorButton]}
+                  onPress={() => setModalType("idle")}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.modalButtonText, { color: "#FFFFFF" }]}>Coba Lagi</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -265,5 +317,94 @@ const styles = StyleSheet.create({
     color: "#DEC39A",
     fontSize: 14,
     fontWeight: "700",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(5, 15, 30, 0.75)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: "#163869",
+    borderRadius: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 22,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(222, 195, 154, 0.35)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  modalContent: {
+    width: "100%",
+    alignItems: "center",
+  },
+  modalIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(222, 195, 154, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "rgba(222, 195, 154, 0.3)",
+  },
+  successIconBg: {
+    backgroundColor: "rgba(222, 195, 154, 0.18)",
+    borderColor: "#DEC39A",
+  },
+  errorIconBg: {
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    borderColor: "rgba(239, 68, 68, 0.4)",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: 8,
+    textAlign: "center",
+    letterSpacing: 0.3,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: "#D1D5DB",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 22,
+  },
+  boldEmail: {
+    color: "#DEC39A",
+    fontWeight: "700",
+  },
+  modalButton: {
+    backgroundColor: "#DEC39A",
+    width: "100%",
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalButtonText: {
+    color: "#111827",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  errorButton: {
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
 });
