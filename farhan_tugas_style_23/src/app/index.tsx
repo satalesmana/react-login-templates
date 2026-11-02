@@ -6,7 +6,6 @@ import MyButton from "../component/mybutton";
 export default function HomeScreen() {
   const router = useRouter();
 
-  // Nilai Animasi (Opacity & Transiasi Posisi Y)
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
@@ -42,13 +41,11 @@ export default function HomeScreen() {
           ]}
         >
           
-          {/* 1. Header Logo */}
           <View style={styles.logoContainer}>
             <Text style={styles.logoIcon}>✦</Text>
             <Text style={styles.logoText}>LOGO</Text>
           </View>
 
-          {/* 2. Ilustrasi Gambar */}
           <View style={styles.imageWrapper}>
             <Image 
               source={require('../../assets/images/duduk.png')} 
@@ -57,13 +54,11 @@ export default function HomeScreen() {
             />
           </View>
 
-          {/* 3. Indikator Pagination */}
           <View style={styles.paginationContainer}>
             <View style={[styles.dot, styles.activeDot]} />
             <View style={[styles.dot, styles.inactiveDot]} />
           </View>
 
-          {/* 4. Teks Identitas & Deskripsi */}
           <View style={styles.textContainer}>
             <Text style={styles.title}>Muhammad Farhan Hafizh</Text>
             <Text style={styles.subtitleMajor}>Manajemen Informatika</Text>
@@ -72,7 +67,6 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          {/* 5. Container Kapsul Tombol Menyatu Bergaris Tepi */}
           <View style={styles.buttonWrapper}>
             <View style={styles.capsuleBorderContainer}>
               <MyButton 
@@ -98,7 +92,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: { 
     flex: 1, 
-    backgroundColor: "#EBF2F7" // Warna background biru muda lembut
+    backgroundColor: "#EBF2F7",
   },
   scrollContainer: { 
     flexGrow: 1, 
@@ -113,93 +107,83 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24, 
     paddingTop: 16,
   },
-  
-  // Header Logo
   logoContainer: { 
     flexDirection: "row", 
     alignItems: "center", 
     marginTop: 10,
-    gap: 8 
+    gap: 8, 
   },
   logoIcon: { 
     fontSize: 20, 
     color: "#334155", 
-    fontWeight: "bold" 
+    fontWeight: "bold", 
   },
   logoText: { 
     fontSize: 16, 
     fontWeight: "900", 
     color: "#334155", 
-    letterSpacing: 1.5 
+    letterSpacing: 1.5, 
   },
-
-  // Area Gambar
   imageWrapper: { 
     width: "100%", 
     height: 260, 
     alignItems: "center", 
     justifyContent: "center", 
-    marginVertical: 12
+    marginVertical: 12,
   },
   illustrationImage: { 
     width: "100%", 
-    height: "100%" 
+    height: "100%", 
   },
-
-  // Pagination
   paginationContainer: { 
     flexDirection: "row", 
     alignItems: "center", 
     gap: 6, 
-    marginBottom: 16 
+    marginBottom: 16, 
   },
   dot: { 
     height: 6, 
-    borderRadius: 3 
+    borderRadius: 3, 
   },
   activeDot: { 
     width: 24, 
-    backgroundColor: "#0EA5E9" 
+    backgroundColor: "#0EA5E9", 
   },
   inactiveDot: { 
     width: 6, 
-    backgroundColor: "#94A3B8" 
+    backgroundColor: "#94A3B8", 
   },
-
-  // Teks Identitas
   textContainer: { 
     alignItems: "center", 
     paddingHorizontal: 10,
-    marginBottom: 20
+    marginBottom: 20,
   },
   title: { 
     fontSize: 22, 
     fontWeight: "bold", 
     color: "#1E293B", 
     textAlign: "center", 
-    marginBottom: 4 
+    marginBottom: 4, 
   },
   subtitleMajor: { 
     fontSize: 14.5, 
     fontWeight: "600", 
     color: "#0EA5E9", 
     textAlign: "center", 
-    marginBottom: 10 
+    marginBottom: 10, 
   },
   description: { 
     fontSize: 12.5, 
     color: "#64748B", 
     textAlign: "center", 
     lineHeight: 18,
-    paddingHorizontal: 8
+    paddingHorizontal: 8,
   },
-
-  // Container Kapsul Tombol dengan Border Luar Presisi
   buttonWrapper: { 
     width: "100%", 
     alignItems: "center",
     marginTop: 10,
-    marginBottom: 10
+    marginBottom: 10,
   },
   capsuleBorderContainer: {
     flexDirection: "row",
@@ -217,7 +201,7 @@ const styles = StyleSheet.create({
     borderRadius: 0, 
     height: "100%",
     elevation: 0,
-    shadowOpacity: 0
+    shadowOpacity: 0,
   },
   signupBtn: { 
     flex: 1, 
@@ -227,6 +211,6 @@ const styles = StyleSheet.create({
     borderRadius: 0, 
     height: "100%",
     elevation: 0,
-    shadowOpacity: 0
+    shadowOpacity: 0,
   },
 });

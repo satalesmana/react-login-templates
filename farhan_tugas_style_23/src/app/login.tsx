@@ -8,17 +8,42 @@ import {
   SafeAreaView,
   ScrollView,
   Animated,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import MyButton from "../component/mybutton";
+import { supabase } from "../supabaseClient";
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Animasi Smooth Entrance persis seperti di index.tsx
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Email dan password tidak boleh kosong!");
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Login Gagal", error.message);
+    } else {
+      Alert.alert("Berhasil", "Login Berhasil!", [
+        { text: "OK", onPress: () => router.push("/dashboard") },
+      ]);
+    }
+  };
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
@@ -54,7 +79,6 @@ export default function LoginScreen() {
             },
           ]}
         >
-          {/* 1. Tombol Back Circle */}
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
@@ -63,16 +87,13 @@ export default function LoginScreen() {
             <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
 
-          {/* 2. Judul: Hey, Welcome Back */}
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Hey,</Text>
             <Text style={styles.headerTitle}>Welcome</Text>
             <Text style={styles.headerTitle}>Back</Text>
           </View>
 
-          {/* 3. Form Inputs */}
           <View style={styles.formContainer}>
-            {/* Input Email */}
             <View style={styles.inputWrapper}>
               <View style={styles.iconBoxLeft}>
                 <Text style={styles.inputIconText}>✉</Text>
@@ -88,18 +109,18 @@ export default function LoginScreen() {
               />
             </View>
 
-            {/* Input Password */}
             <View style={styles.inputWrapper}>
               <View style={styles.iconBoxLeft}>
                 <Text style={styles.inputIconText}>📍</Text>
               </View>
               <TextInput
                 style={styles.input}
-                placeholder="Enter your email"
+                placeholder="Enter your password"
                 placeholderTextColor="#A0AEC0"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
+                autoCapitalize="none"
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
@@ -109,20 +130,17 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Forgot Password Link */}
             <TouchableOpacity style={styles.forgotPasswordContainer}>
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            {/* Tombol Login MyButton */}
             <MyButton
-              title="Login"
-              onPress={() => router.push("/dashboard")}
+              title={loading ? "Loading..." : "Login"}
+              onPress={handleLogin}
               style={styles.loginBtnStyle}
             />
           </View>
 
-          {/* 4. Footer & Social Login */}
           <View style={styles.footerContainer}>
             <Text style={styles.orText}>or continue with</Text>
 
@@ -133,13 +151,10 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Tombol Google Kapsul Outlined dengan Logo Google Multi-Color CSS Murni */}
             <TouchableOpacity
               style={styles.googleCustomBtn}
               activeOpacity={0.8}
-              onPress={() => {
-                // Aksi Login Google
-              }}
+              onPress={() => {}}
             >
               <View style={styles.googleLogoCircle}>
                 <Text style={styles.googleLetterBlue}>G</Text>
@@ -156,7 +171,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#EBF2F7", // Background biru muda lembut
+    backgroundColor: "#EBF2F7",
   },
   scrollContainer: {
     flexGrow: 1,
@@ -169,8 +184,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     justifyContent: "space-between",
   },
-
-  // Back Button Bulat
   backButton: {
     width: 40,
     height: 40,
@@ -185,8 +198,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#2D3748",
   },
-
-  // Header Title
   headerTitleContainer: {
     marginBottom: 28,
   },
@@ -197,8 +208,6 @@ const styles = StyleSheet.create({
     lineHeight: 42,
     letterSpacing: -0.5,
   },
-
-  // Form Inputs
   formContainer: {
     width: "100%",
   },
@@ -208,7 +217,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderWidth: 1.2,
     borderColor: "#CBD5E1",
-    borderRadius: 30, // Kapsul Melengkung Presisi
+    borderRadius: 30,
     height: 52,
     paddingHorizontal: 16,
     marginBottom: 16,
@@ -235,8 +244,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#A0AEC0",
   },
-
-  // Forgot Password
   forgotPasswordContainer: {
     alignSelf: "flex-end",
     marginBottom: 22,
@@ -247,16 +254,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#4A5568",
   },
-
-  // Styling MyButton Login
   loginBtnStyle: {
     width: "100%",
-    backgroundColor: "#44484B", // Warna gelap solid persis gambar
+    backgroundColor: "#44484B",
     borderRadius: 30,
     height: 52,
   },
-
-  // Footer & Social Login
   footerContainer: {
     alignItems: "center",
     marginTop: 16,
@@ -280,8 +283,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#2D3748",
   },
-
-  // Google Custom Button Kapsul Outlined
   googleCustomBtn: {
     flexDirection: "row",
     width: "100%",
@@ -294,7 +295,6 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     gap: 10,
   },
-  // Logo G Google Bulat CSS Styled
   googleLogoCircle: {
     width: 22,
     height: 22,

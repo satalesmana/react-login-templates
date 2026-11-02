@@ -8,9 +8,11 @@ import {
   SafeAreaView,
   ScrollView,
   Animated,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import MyButton from "../component/mybutton";
+import { supabase } from "../supabaseClient";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -18,8 +20,38 @@ export default function RegisterScreen() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Animasi Smooth Entrance (Logika 100% sama dengan index & login)
+  const handleRegister = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Email dan password tidak boleh kosong!");
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: {
+          phone: phone, 
+        },
+      },
+    });
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Registrasi Gagal", error.message);
+    } else {
+      Alert.alert(
+        "Berhasil!",
+        "Akun berhasil dibuat. Silakan login.",
+        [{ text: "OK", onPress: () => router.push("/login") }]
+      );
+    }
+  };
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
@@ -55,7 +87,6 @@ export default function RegisterScreen() {
             },
           ]}
         >
-          {/* 1. Tombol Back Circle */}
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
@@ -64,15 +95,12 @@ export default function RegisterScreen() {
             <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
 
-          {/* 2. Judul: Let's get started */}
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Let's get</Text>
             <Text style={styles.headerTitle}>started</Text>
           </View>
 
-          {/* 3. Form Inputs */}
           <View style={styles.formContainer}>
-            {/* Input 1: Email */}
             <View style={styles.inputWrapper}>
               <View style={styles.iconBoxLeft}>
                 <Text style={styles.inputIconText}>✉</Text>
@@ -88,7 +116,6 @@ export default function RegisterScreen() {
               />
             </View>
 
-            {/* Input 2: Phone No */}
             <View style={styles.inputWrapper}>
               <View style={styles.iconBoxLeft}>
                 <Text style={styles.inputIconText}>📱</Text>
@@ -103,18 +130,18 @@ export default function RegisterScreen() {
               />
             </View>
 
-            {/* Input 3: Password */}
             <View style={styles.inputWrapper}>
               <View style={styles.iconBoxLeft}>
                 <Text style={styles.inputIconText}>📍</Text>
               </View>
               <TextInput
                 style={styles.input}
-                placeholder="Enter your email"
+                placeholder="Enter your password"
                 placeholderTextColor="#A0AEC0"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
+                autoCapitalize="none"
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
@@ -124,25 +151,20 @@ export default function RegisterScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Tombol Sign up MyButton */}
             <MyButton
-              title="Sign up"
-              onPress={() => router.push("/dashboard")}
+              title={loading ? "Loading..." : "Sign up"}
+              onPress={handleRegister}
               style={styles.signupBtnStyle}
             />
           </View>
 
-          {/* 4. Footer & Social Register */}
           <View style={styles.footerContainer}>
             <Text style={styles.orText}>or continue with</Text>
 
-            {/* Tombol Google Kapsul Outlined */}
             <TouchableOpacity
               style={styles.googleCustomBtn}
               activeOpacity={0.8}
-              onPress={() => {
-                // Aksi Google Register
-              }}
+              onPress={() => {}}
             >
               <View style={styles.googleLogoCircle}>
                 <Text style={styles.googleLetterBlue}>G</Text>
@@ -150,7 +172,6 @@ export default function RegisterScreen() {
               <Text style={styles.googleBtnText}>Google</Text>
             </TouchableOpacity>
 
-            {/* Navigasi ke Halaman Login */}
             <View style={styles.loginPromptContainer}>
               <Text style={styles.promptText}>Already have an account? </Text>
               <TouchableOpacity onPress={() => router.push("/login")}>
@@ -167,7 +188,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#EBF2F7", // Background biru muda lembut
+    backgroundColor: "#EBF2F7",
   },
   scrollContainer: {
     flexGrow: 1,
@@ -180,8 +201,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     justifyContent: "space-between",
   },
-
-  // Back Button Bulat
   backButton: {
     width: 40,
     height: 40,
@@ -196,8 +215,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#2D3748",
   },
-
-  // Header Title
   headerTitleContainer: {
     marginBottom: 24,
   },
@@ -208,8 +225,6 @@ const styles = StyleSheet.create({
     lineHeight: 42,
     letterSpacing: -0.5,
   },
-
-  // Form Inputs
   formContainer: {
     width: "100%",
   },
@@ -219,7 +234,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderWidth: 1.2,
     borderColor: "#CBD5E1",
-    borderRadius: 30, // Kapsul Melengkung Presisi
+    borderRadius: 30,
     height: 52,
     paddingHorizontal: 16,
     marginBottom: 16,
@@ -246,17 +261,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#A0AEC0",
   },
-
-  // Styling MyButton Sign up
   signupBtnStyle: {
     width: "100%",
-    backgroundColor: "#44484B", // Warna abu gelap solid
+    backgroundColor: "#44484B",
     borderRadius: 30,
     height: 52,
     marginTop: 6,
   },
-
-  // Footer & Social Register
   footerContainer: {
     alignItems: "center",
     marginTop: 16,
@@ -266,8 +277,6 @@ const styles = StyleSheet.create({
     color: "#718096",
     marginBottom: 12,
   },
-
-  // Google Custom Button Kapsul Outlined
   googleCustomBtn: {
     flexDirection: "row",
     width: "100%",
@@ -301,8 +310,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#2D3748",
   },
-
-  // Prompt Login
   loginPromptContainer: {
     flexDirection: "row",
     alignItems: "center",
