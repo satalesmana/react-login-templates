@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+    Alert,
     Image,
     Platform,
     Pressable,
@@ -13,7 +14,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { isEmailRegistered, registerUser } from '../data/users';
+import { supabase } from '../lib/supabase';
 
 const MONTHS = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -76,6 +77,7 @@ export default function SignUpScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleDateChange = (_event: DateTimePickerEvent, selected?: Date) => {
         // Android: dialog menutup otomatis. iOS: spinner tetap tampil.
@@ -86,7 +88,7 @@ export default function SignUpScreen() {
         }
     };
 
-    const handleSignUp = () => {
+    const handleSignUp = async () => {
         if (!name.trim() || !birthDate || !email.trim() || !password) {
             setError('Semua kolom wajib diisi.');
             return;
@@ -99,14 +101,33 @@ export default function SignUpScreen() {
             setError('Password minimal 6 karakter.');
             return;
         }
-        if (isEmailRegistered(email)) {
-            setError('Email sudah terdaftar. Silakan gunakan email lain atau sign in.');
+        setLoading(true);
+        // Nama & tanggal lahir disimpan sebagai user_metadata di Supabase Auth
+        const { data: { session }, error } = await supabase.auth.signUp({
+            email: email.trim(),
+            password,
+            options: {
+                data: {
+                    name: name.trim(),
+                    birth_date: birthDate.toISOString().slice(0, 10),
+                },
+            },
+        });
+        setLoading(false);
+
+        if (error) {
+            setError(error.message);
             return;
         }
-
-        registerUser({ name: name.trim(), birthDate, email, password });
         setError('');
-        router.replace('/SignIn-Screen');
+
+        // Session kosong = "Confirm email" aktif, user harus verifikasi dulu
+        if (!session) {
+            Alert.alert('Pendaftaran berhasil', 'Cek email Anda untuk verifikasi akun, lalu sign in.');
+            router.replace('/SignIn-Screen');
+            return;
+        }
+        router.replace('/Main-Screen');
     };
 
     return (
@@ -158,6 +179,7 @@ export default function SignUpScreen() {
             <Input
                 label="Email"
                 value={email}
+                keyboardType="email-address"
                 onChangeText={(text) => {
                     setEmail(text);
                     setError('');
@@ -179,7 +201,11 @@ export default function SignUpScreen() {
             )}
 
             {/* Tombol Sign Up */}
-            <Button title="Sign up" onPress={handleSignUp} />
+            <Button
+                title={loading ? 'Loading...' : 'Sign up'}
+                onPress={handleSignUp}
+                disabled={loading}
+            />
 
             {/* Divider / Garis "or" */}
             <View className="flex-row items-center my-6">

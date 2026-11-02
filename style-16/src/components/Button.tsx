@@ -6,6 +6,7 @@ interface ButtonProps {
     onPress: () => void;
     variant?: 'primary' | 'outline' | 'danger';
     icon?: React.ReactNode;
+    disabled?: boolean;
 }
 
 const containerStyles = {
@@ -25,11 +26,13 @@ export const Button: React.FC<ButtonProps> = ({
     onPress,
     variant = 'primary',
     icon,
+    disabled = false,
 }) => {
     return (
         <TouchableOpacity
             onPress={onPress}
-            className={`w-full py-4 rounded-xl flex-row items-center justify-center ${containerStyles[variant]}`}
+            disabled={disabled}
+            className={`w-full py-4 rounded-xl flex-row items-center justify-center ${containerStyles[variant]} ${disabled ? 'opacity-50' : ''}`}
         >
             <Text className={`font-semibold text-base ${textStyles[variant]}`}>
                 {title}

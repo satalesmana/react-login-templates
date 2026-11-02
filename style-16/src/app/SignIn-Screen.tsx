@@ -3,7 +3,7 @@ import { Text, TouchableOpacity, View, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { findUser } from '../data/users';
+import { supabase } from '../lib/supabase';
 
 export default function SignInScreen() {
     const router = useRouter();
@@ -11,14 +11,28 @@ export default function SignInScreen() {
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleSignIn = () => {
-        if (findUser(email, password)) {
-            setError('');
-            router.replace('/Main-Screen');
-        } else {
-            setError('Email atau password salah. Silakan coba lagi.');
+    const handleSignIn = async () => {
+        if (!email.trim() || !password) {
+            setError('Email dan password wajib diisi.');
+            return;
         }
+
+        setLoading(true);
+        const { error } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+        });
+        setLoading(false);
+
+        if (error) {
+            setError(error.message);
+            return;
+        }
+        // Session otomatis disimpan Supabase ke AsyncStorage
+        setError('');
+        router.replace('/Main-Screen');
     };
 
     return (
@@ -32,6 +46,7 @@ export default function SignInScreen() {
             <Input
                 label="Email"
                 value={email}
+                keyboardType="email-address"
                 onChangeText={(text) => {
                     setEmail(text);
                     setError('');
@@ -69,7 +84,11 @@ export default function SignInScreen() {
             </View>
 
             {/* Tombol Sign In */}
-            <Button title="Sign in" onPress={handleSignIn} />
+            <Button
+                title={loading ? 'Loading...' : 'Sign in'}
+                onPress={handleSignIn}
+                disabled={loading}
+            />
 
             {/* Divider / Garis "or" */}
             <View className="flex-row items-center my-6">

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Animated, Pressable, TextInput, View } from 'react-native';
+import { Animated, KeyboardTypeOptions, Pressable, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface InputProps {
@@ -7,6 +7,7 @@ interface InputProps {
     value: string;
     onChangeText: (text: string) => void;
     secureTextEntry?: boolean;
+    keyboardType?: KeyboardTypeOptions;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -14,6 +15,7 @@ export const Input: React.FC<InputProps> = ({
     value,
     onChangeText,
     secureTextEntry,
+    keyboardType = 'default',
 }) => {
     const [isFocused, setIsFocused] = useState(false);
     const [hidePassword, setHidePassword] = useState(true);
@@ -66,6 +68,7 @@ export const Input: React.FC<InputProps> = ({
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                     secureTextEntry={secureTextEntry && hidePassword}
+                    keyboardType={keyboardType}
                     autoCapitalize="none"
                 />
 
