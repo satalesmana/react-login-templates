@@ -252,36 +252,32 @@ export default function Index() {
   }
 
   async function executeDelete(id: number | string, name: string) {
-    setLoadingAction({ visible: true, message: 'Menghapus dompet...' });
-    await deleteDompet(id);
-    const updated = await getDompetList(currentUserId);
-    if (updated.data) {
-      setSavedDompets(updated.data);
+    try {
+      setLoadingAction({ visible: true, message: 'Menghapus dompet...' });
+      await deleteDompet(id);
+      // Immediately filter out locally from state so it disappears right away
+      setSavedDompets((prev) => prev.filter((item) => String(item.id) !== String(id)));
+      const updated = await getDompetList(currentUserId);
+      if (updated.data) {
+        setSavedDompets(updated.data);
+      }
+      setNotification({
+        message: `Dompet "${name}" berhasil dihapus.`,
+        type: 'success',
+      });
+    } catch (err: any) {
+      setNotification({
+        message: 'Gagal menghapus dompet: ' + (err?.message || err),
+        type: 'error',
+      });
+    } finally {
+      setLoadingAction({ visible: false, message: '' });
     }
-    setLoadingAction({ visible: false, message: '' });
-    setNotification({
-      message: `Dompet "${name}" berhasil dihapus.`,
-      type: 'success',
-    });
   }
 
   function handleDeleteWallet(id: number | string, name: string) {
-    if (Platform.OS === 'web') {
-      const confirmed = window.confirm(`Yakin ingin menghapus dompet "${name}"?`);
-      if (confirmed) {
-        executeDelete(id, name);
-      }
-      return;
-    }
-
-    Alert.alert('Hapus Dompet', `Yakin ingin menghapus dompet "${name}"?`, [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Hapus',
-        style: 'destructive',
-        onPress: () => executeDelete(id, name),
-      },
-    ]);
+    // Directly delete to avoid web preview blocking confirm popups
+    executeDelete(id, name);
   }
 
   async function handleCancelOrBack() {
