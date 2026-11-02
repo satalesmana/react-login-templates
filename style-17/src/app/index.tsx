@@ -12,8 +12,10 @@ export default function Index() {
       <Text className="text-[32px] font-medium">Welcome to our app</Text>
 
       <Image
-        className="w-[310px] h-[187px] mt-[50px]"
+        className="mt-[50px] w-full max-w-[310px]"
+        style={{ aspectRatio: 310 / 187 }}
         source={require("../../assets/images/cover.png")}
+        resizeMode="contain"
       />
 
       <MyButton

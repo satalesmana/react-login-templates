@@ -32,8 +32,6 @@ export default function Register() {
 
     if (password.length < 6) {
       newErrors.password = "Password must be at least 6 characters !";
-    } else if (emailTrim === "tes@gmail.com" && password === "tes123") {
-      newErrors.password = "Account already registered !";
     }
 
     setErrors(newErrors);

@@ -6,7 +6,11 @@ type MyButtonProps = {
   className?: string;
 };
 
-export default function MyButton({ title, onPress, className }: MyButtonProps) {
+export default function MyButton({
+  title,
+  onPress,
+  className = "",
+}: MyButtonProps) {
   return (
     <Pressable
       onPress={onPress}

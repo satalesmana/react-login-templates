@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, ScrollView, Text, View } from "react-native";
+import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
 import ButtonSocial from "../components/ButtonSocial";
 import MyButton from "../components/MyButton";
 import MyInput from "../components/MyInput";
@@ -37,7 +37,7 @@ export default function Login() {
         {/* Ilustrasi */}
         <Image
           source={require("../../assets/images/cover.png")}
-          className="h-[200px] w-full "
+          className="h-[200px] w-full"
           resizeMode="contain"
         />
 
@@ -47,7 +47,7 @@ export default function Login() {
         {/* Input */}
         <MyInput
           className="mt-4"
-          placeholder="Username , email & phone number"
+          placeholder="Email"
           value={username}
           onChangeText={setUsername}
         />
@@ -59,15 +59,30 @@ export default function Login() {
           secureTextEntry
         />
 
-        <Text className="mt-2 self-end text-[12px] text-black">
-          Forgot Password ?
-        </Text>
+        <Pressable
+          className="mt-2 self-end"
+          onPress={() =>
+            Alert.alert("Forgot Password", "Fitur reset password belum tersedia.")
+          }
+        >
+          <Text className="text-[12px] text-black">Forgot Password ?</Text>
+        </Pressable>
 
         {error !== "" && (
           <Text className="mt-3 text-[13px] text-red-500">{error}</Text>
         )}
 
         <MyButton title="Login" className="mt-8" onPress={handleLogin} />
+
+        {/* Link ke register */}
+        <View className="mt-4 flex-row justify-center">
+          <Text className="text-[12px]">{"Don't have an account? "}</Text>
+          <Pressable onPress={() => router.push("/register")}>
+            <Text className="text-[12px] font-semibold text-[#0B6EFE]">
+              Register
+            </Text>
+          </Pressable>
+        </View>
 
         <View className="mt-8 flex-row items-center justify-center gap-2">
           <Image
