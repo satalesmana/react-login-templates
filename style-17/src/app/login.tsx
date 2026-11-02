@@ -4,20 +4,37 @@ import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
 import ButtonSocial from "../components/ButtonSocial";
 import MyButton from "../components/MyButton";
 import MyInput from "../components/MyInput";
+import { supabase } from "../lib/supabase";
 
 export default function Login() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (username.trim() === "tes@gmail.com" && password === "tes123") {
-      setError("");
-      router.replace("/main");
-    } else {
-      setError("Email atau password salah");
+  const handleLogin = async () => {
+    if (loading) return;
+
+    if (username.trim() === "" || password === "") {
+      setError("Email dan password wajib diisi");
+      return;
     }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: username.trim(),
+      password: password,
+    });
+    setLoading(false);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setError("");
+    router.replace("/main");
   };
 
   return (
@@ -72,7 +89,11 @@ export default function Login() {
           <Text className="mt-3 text-[13px] text-red-500">{error}</Text>
         )}
 
-        <MyButton title="Login" className="mt-8" onPress={handleLogin} />
+        <MyButton
+          title={loading ? "Loading..." : "Login"}
+          className="mt-8"
+          onPress={handleLogin}
+        />
 
         {/* Link ke register */}
         <View className="mt-4 flex-row justify-center">

@@ -1,9 +1,10 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, ScrollView, Text, View } from "react-native";
+import { Alert, Image, ScrollView, Text, View } from "react-native";
 import ButtonSocial from "../components/ButtonSocial";
 import MyButton from "../components/MyButton";
 import MyInput from "../components/MyInput";
+import { supabase } from "../lib/supabase";
 
 export default function Register() {
   const router = useRouter();
@@ -15,8 +16,20 @@ export default function Register() {
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
+  // Kembali ke login tanpa membuat halaman login dobel
+  const goToLogin = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/login");
+    }
+  };
+
+  const handleRegister = async () => {
+    if (loading) return;
+
     const newErrors = { fullName: "", email: "", password: "" };
     const emailTrim = email.trim();
 
@@ -26,8 +39,6 @@ export default function Register() {
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
       newErrors.email = "Please enter valid email !";
-    } else if (emailTrim === "tes@gmail.com") {
-      newErrors.email = "Email already registered !";
     }
 
     if (password.length < 6) {
@@ -37,9 +48,32 @@ export default function Register() {
     setErrors(newErrors);
 
     const hasError = Object.values(newErrors).some((msg) => msg !== "");
-    if (!hasError) {
-      router.replace("/login");
+    if (hasError) return;
+
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({
+      email: emailTrim,
+      password: password,
+      options: {
+        data: { full_name: fullName.trim() },
+      },
+    });
+    setLoading(false);
+
+    if (error) {
+      setErrors({ ...newErrors, email: error.message });
+      return;
     }
+
+    if (data.session) {
+      // Supabase langsung me-login-kan user baru.
+      // Kita logout dulu supaya user login sendiri di halaman Login.
+      await supabase.auth.signOut();
+      Alert.alert("Berhasil", "Akun berhasil dibuat, silakan login.");
+    } else {
+      Alert.alert("Cek Email", "Silakan cek email kamu untuk verifikasi.");
+    }
+    goToLogin();
   };
 
   return (
@@ -84,7 +118,11 @@ export default function Register() {
         />
 
         {/* Tombol register */}
-        <MyButton title="Register" className="mt-8" onPress={handleRegister} />
+        <MyButton
+          title={loading ? "Loading..." : "Register"}
+          className="mt-8"
+          onPress={handleRegister}
+        />
 
         {/* Pemisah */}
         <View className="mt-8 flex-row items-center justify-center gap-2">
@@ -105,15 +143,15 @@ export default function Register() {
         <View className="mt-5 flex-row items-center justify-center gap-4">
           <ButtonSocial
             icon={require("../../assets/images/google.png")}
-            onPress={() => router.replace("/login")}
+            onPress={goToLogin}
           />
           <ButtonSocial
             icon={require("../../assets/images/facebook.png")}
-            onPress={() => router.replace("/login")}
+            onPress={goToLogin}
           />
           <ButtonSocial
             icon={require("../../assets/images/apple.png")}
-            onPress={() => router.replace("/login")}
+            onPress={goToLogin}
           />
         </View>
       </ScrollView>
