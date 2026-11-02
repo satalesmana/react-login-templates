@@ -251,25 +251,35 @@ export default function Index() {
     Alert.alert('Berhasil', successMsg);
   }
 
-  async function handleDeleteWallet(id: number | string, name: string) {
+  async function executeDelete(id: number | string, name: string) {
+    setLoadingAction({ visible: true, message: 'Menghapus dompet...' });
+    await deleteDompet(id);
+    const updated = await getDompetList(currentUserId);
+    if (updated.data) {
+      setSavedDompets(updated.data);
+    }
+    setLoadingAction({ visible: false, message: '' });
+    setNotification({
+      message: `Dompet "${name}" berhasil dihapus.`,
+      type: 'success',
+    });
+  }
+
+  function handleDeleteWallet(id: number | string, name: string) {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`Yakin ingin menghapus dompet "${name}"?`);
+      if (confirmed) {
+        executeDelete(id, name);
+      }
+      return;
+    }
+
     Alert.alert('Hapus Dompet', `Yakin ingin menghapus dompet "${name}"?`, [
       { text: 'Batal', style: 'cancel' },
       {
         text: 'Hapus',
         style: 'destructive',
-        onPress: async () => {
-          setLoadingAction({ visible: true, message: 'Menghapus dompet...' });
-          await deleteDompet(id);
-          const updated = await getDompetList(currentUserId);
-          if (updated.data) {
-            setSavedDompets(updated.data);
-          }
-          setLoadingAction({ visible: false, message: '' });
-          setNotification({
-            message: `Dompet "${name}" berhasil dihapus.`,
-            type: 'success',
-          });
-        },
+        onPress: () => executeDelete(id, name),
       },
     ]);
   }
@@ -870,10 +880,12 @@ export default function Index() {
                   </View>
 
                   <TouchableOpacity
-                    onPress={() => item.id && handleDeleteWallet(item.id, item.name)}
-                    className="bg-white/20 p-2 rounded-lg"
+                    onPress={() => item.id !== undefined && handleDeleteWallet(item.id, item.name)}
+                    activeOpacity={0.7}
+                    className="bg-red-500/80 hover:bg-red-600 px-3 py-2 rounded-xl flex-row items-center border border-red-300/40"
                   >
                     <Feather name="trash-2" size={15} color="#ffffff" />
+                    <Text className="text-white text-xs font-bold ml-1.5">Hapus</Text>
                   </TouchableOpacity>
                 </View>
               ))
