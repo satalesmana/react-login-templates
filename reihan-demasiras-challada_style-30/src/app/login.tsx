@@ -37,7 +37,7 @@ export default function Login() {
         setErrorMessage(error.message);
         setPassword("");
       } else {
-        router.replace("/");
+        router.replace("/dompet");
       }
     }
 
