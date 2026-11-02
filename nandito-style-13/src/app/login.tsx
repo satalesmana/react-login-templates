@@ -1,9 +1,12 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import { MyButton, MyTextInput } from "@/components";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
+  Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,25 +18,56 @@ export default function LoginScreen() {
   const [email, onChangeEmail] = React.useState("");
   const [password, onChangePassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
   const router = useRouter();
 
-  // Validasi login demo dari latihan dosen
-  const onLoginPress = () => {
-    if (email === "" || password === "") {
-      alert("Please fill in all fields");
+  const showMessage = (message: string) => {
+    if (Platform.OS === "web") {
+      alert(message);
+    } else {
+      Alert.alert("Login", message);
+    }
+  };
+
+  const onLoginPress = async () => {
+    if (loading) return;
+
+    if (!email.trim() || !password) {
+      showMessage("Please fill in all fields");
       return;
     }
 
-    if (email === "admin@gmail.com" && password === "tes123") {
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) {
+        showMessage(error.message);
+        return;
+      }
+
+      if (!data.session) {
+        showMessage("Login failed. Please try again.");
+        return;
+      }
+
       router.replace("/(admin)/home");
-    } else {
-      alert("Invalid email or password");
+    } catch {
+      showMessage(
+        "Unable to connect to Supabase. Check your internet connection."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   const onSocialPress = (provider: string) => {
-    alert(`Login with ${provider} belum tersedia pada demo.`);
+    showMessage(`Login with ${provider} is not available yet.`);
   };
 
   return (
@@ -43,12 +77,10 @@ export default function LoginScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.container}>
-        {/* Judul */}
         <View style={styles.titleContainer}>
           <Text style={styles.textTitle}>Log in</Text>
         </View>
 
-        {/* Form */}
         <View style={styles.inputContainer}>
           <MyTextInput
             placeholder="Email Address"
@@ -70,9 +102,7 @@ export default function LoginScreen() {
                 hitSlop={12}
                 accessibilityRole="button"
                 accessibilityLabel={
-                  showPassword
-                    ? "Hide password"
-                    : "Show password"
+                  showPassword ? "Hide password" : "Show password"
                 }
               >
                 <Ionicons
@@ -89,11 +119,10 @@ export default function LoginScreen() {
           />
         </View>
 
-        {/* Forgot password */}
         <Pressable
           style={styles.forgotContainer}
           onPress={() =>
-            alert("Password reset belum tersedia pada demo.")
+            showMessage("Password reset is not available yet.")
           }
         >
           <Text style={styles.forgotPasswordText}>
@@ -101,16 +130,20 @@ export default function LoginScreen() {
           </Text>
         </Pressable>
 
-        {/* Tombol login */}
-        <View style={styles.buttonContainer}>
+        <View
+          style={[
+            styles.buttonContainer,
+            loading && styles.buttonLoading,
+          ]}
+          pointerEvents={loading ? "none" : "auto"}
+        >
           <MyButton
-            text="Log in"
+            text={loading ? "Logging in..." : "Log in"}
             btnType="Primary"
             action={onLoginPress}
           />
         </View>
 
-        {/* Link register */}
         <View style={styles.registerContainer}>
           <Text style={styles.registerText}>
             Don't have an account?{" "}
@@ -121,14 +154,12 @@ export default function LoginScreen() {
           </Pressable>
         </View>
 
-        {/* Pembatas OR */}
         <View style={styles.dividerContainer}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>OR</Text>
           <View style={styles.dividerLine} />
         </View>
 
-        {/* Login sosial */}
         <View style={styles.socialContainer}>
           <Pressable
             style={styles.socialButton}
@@ -205,6 +236,9 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 27,
+  },
+  buttonLoading: {
+    opacity: 0.6,
   },
   registerContainer: {
     flexDirection: "row",

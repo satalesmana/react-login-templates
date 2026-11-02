@@ -1,8 +1,12 @@
 
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
+import { supabase } from "@/lib/supabase";
+import React from "react";
 import {
+  Alert,
   Image,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -18,9 +22,43 @@ const STUDENT_CLASS = "Manajemen Informatika 24";
 
 export default function AdminHomeScreen() {
   const router = useRouter();
+  const [loggingOut, setLoggingOut] = React.useState(false);
+  const logoutInProgress = React.useRef(false);
 
-  const onLogoutPress = () => {
-    router.replace("/login");
+  // Logout menggunakan Supabase Auth
+  const onLogoutPress = async () => {
+    if (logoutInProgress.current) return;
+
+    logoutInProgress.current = true;
+    setLoggingOut(true);
+
+    try {
+      const { error } = await supabase.auth.signOut({
+        scope: "local",
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Session guard akan menolak akses Home
+      // setelah sesi Supabase dihapus.
+      router.replace("/login");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Gagal logout. Silakan coba lagi.";
+
+      if (Platform.OS === "web") {
+        alert(message);
+      } else {
+        Alert.alert("Logout gagal", message);
+      }
+    } finally {
+      logoutInProgress.current = false;
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -132,7 +170,7 @@ export default function AdminHomeScreen() {
           {/* Logout */}
           <View style={styles.logoutContainer}>
             <MyButton
-              text="Log out"
+              text={loggingOut ? "Logging out..." : "Log out"}
               btnType="Primary"
               action={onLogoutPress}
             />

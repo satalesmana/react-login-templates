@@ -1,9 +1,12 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import { MyButton, MyTextInput } from "@/components";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
+  Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,42 +20,106 @@ export default function RegisterScreen() {
   const [confirmPassword, onChangeConfirmPassword] =
     React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
   const router = useRouter();
 
-  // Validasi form registrasi sederhana
-  const onRegisterPress = () => {
+  const showMessage = (message: string) => {
+    if (Platform.OS === "web") {
+      alert(message);
+    } else {
+      Alert.alert("Registration", message);
+    }
+  };
+
+  const onRegisterPress = async () => {
+    if (loading) return;
+
+    const normalizedEmail = email.trim().toLowerCase();
+
     if (
-      email.trim() === "" ||
+      normalizedEmail === "" ||
       password === "" ||
       confirmPassword === ""
     ) {
-      alert("Please fill in all fields");
+      showMessage("Please fill in all fields");
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      alert("Please enter a valid email address");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      showMessage("Please enter a valid email address");
       return;
     }
 
     if (password.length < 6) {
-      alert("Password must be at least 6 characters");
+      showMessage("Password must be at least 6 characters");
       return;
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      showMessage("Passwords do not match");
       return;
     }
 
-    alert(
-      "Form valid. Registration is a demo and does not create an account yet."
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+      });
+
+      if (error) {
+        showMessage(error.message);
+        return;
+      }
+
+      if (!data.user) {
+        showMessage("Registration failed. Please try again.");
+        return;
+      }
+
+      if (data.session) {
+  const { error: signOutError } = await supabase.auth.signOut({
+    scope: "local",
+  });
+
+  if (signOutError) {
+    showMessage(
+      "Account created, but automatic logout failed. Please log out manually."
     );
+    return;
+  }
+}
+
+const successMessage = data.session
+  ? "Registration successful! Please log in."
+  : "Registration received. Verify your email if required, then log in.";
+
+if (Platform.OS === "web") {
+  alert(successMessage);
+  router.replace("/login");
+} else {
+  Alert.alert("Registration", successMessage, [
+    {
+      text: "OK",
+      onPress: () => router.replace("/login"),
+    },
+  ]);
+}
+    } catch {
+      showMessage(
+        "Unable to connect to Supabase. Check your internet connection."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onSocialPress = (provider: string) => {
-    alert(`Sign in with ${provider} belum tersedia pada demo.`);
+    showMessage(
+      `Sign in with ${provider} is not available yet.`
+    );
   };
 
   return (
@@ -116,9 +183,15 @@ export default function RegisterScreen() {
         </View>
 
         {/* Tombol Register */}
-        <View style={styles.buttonContainer}>
+        <View
+          style={[
+            styles.buttonContainer,
+            loading && styles.buttonLoading,
+          ]}
+          pointerEvents={loading ? "none" : "auto"}
+        >
           <MyButton
-            text="Register"
+            text={loading ? "Registering..." : "Register"}
             btnType="Primary"
             action={onRegisterPress}
           />
@@ -210,6 +283,9 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 27,
+  },
+  buttonLoading: {
+    opacity: 0.6,
   },
   loginContainer: {
     flexDirection: "row",
