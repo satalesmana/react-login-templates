@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { users } from '../store';
+import { supabase } from '../lib/supabase';
 
 const fields = [
   { key: 'name', placeholder: 'Name' },
-  { key: 'business', placeholder: 'Buissness name' },
+  { key: 'business', placeholder: 'Business name' },
   { key: 'phone', placeholder: 'Phone', keyboardType: 'phone-pad' },
   { key: 'email', placeholder: 'Email', keyboardType: 'email-address', autoCapitalize: 'none' },
   { key: 'password', placeholder: 'Password', secureTextEntry: true },
@@ -13,10 +13,12 @@ const fields = [
 export default function RegisterScreen({ navigation }) {
   const [form, setForm] = useState({ name: '', business: '', phone: '', email: '', password: '' });
 
-  const register = () => {
+  const register = async () => {
     if (Object.values(form).some((v) => !v)) return Alert.alert('Error', 'Semua kolom wajib diisi');
-    users.push(form);
-    Alert.alert('Berhasil', 'Akun dibuat, silakan login');
+    const { email, password, ...data } = form;
+    const { data: res, error } = await supabase.auth.signUp({ email, password, options: { data } });
+    if (error) return Alert.alert('Error', error.message);
+    Alert.alert('Berhasil', res.session ? 'Akun dibuat, silakan login' : 'Cek email untuk verifikasi, lalu login');
     navigation.navigate('Login');
   };
 
@@ -36,7 +38,7 @@ export default function RegisterScreen({ navigation }) {
       ))}
 
       <TouchableOpacity onPress={register} style={{ backgroundColor: '#000', padding: 16, borderRadius: 8, marginTop: 24 }}>
-        <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>Sign in</Text>
+        <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>Register</Text>
       </TouchableOpacity>
 
       <Text style={{ textAlign: 'center', marginTop: 20 }}>

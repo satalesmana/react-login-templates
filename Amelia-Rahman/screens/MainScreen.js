@@ -1,6 +1,7 @@
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { supabase } from '../lib/supabase';
 
-export default function MainScreen() {
+export default function MainScreen({ navigation }) {
   const profile = [
     { label: 'Nama', value: 'Amelia Rahman' },
     { label: 'Jurusan', value: 'Manajemen Informatika (MI-24)' },
@@ -19,6 +20,13 @@ export default function MainScreen() {
           <Text style={{ fontSize: 20, fontWeight: 'bold' }}>{value}</Text>
         </View>
       ))}
+
+      <TouchableOpacity onPress={() => navigation.navigate('Dompet')} style={{ backgroundColor: '#6C7BFF', padding: 16, borderRadius: 8, width: 240, marginTop: 16 }}>
+        <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>Dompet</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => supabase.auth.signOut().then(() => navigation.replace('Welcome'))} style={{ backgroundColor: '#000', padding: 16, borderRadius: 8, width: 240, marginTop: 12 }}>
+        <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>Logout</Text>
+      </TouchableOpacity>
     </View>
   );
 }
