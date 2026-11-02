@@ -203,7 +203,7 @@ export default function DashboardScreen() {
         </TouchableOpacity>
 
         <Text style={styles.footerCopyright}>
-          UTS Mobile Programming 2026/2027 • LP3I
+          SELAMAT DATANG PA SATA
         </Text>
       </ScrollView>
 
@@ -429,8 +429,8 @@ const styles = StyleSheet.create({
   },
   footerCopyright: {
     textAlign: "center",
-    fontSize: 11,
-    color: "#94A3B8",
+    fontSize: 30,
+    color: "#000000",
   },
   modalOverlay: {
     flex: 1,
