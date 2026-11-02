@@ -1,7 +1,10 @@
+import { supabase } from "../supabase";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Dimensions,
   Image,
   KeyboardAvoidingView,
@@ -22,6 +25,24 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Email dan password wajib diisi.");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Login Gagal", error.message);
+    } else {
+      router.replace("/main");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -110,11 +131,16 @@ export default function LoginScreen() {
           {/* ── Button + Links ── */}
           <View style={styles.buttonWrapper}>
             <TouchableOpacity
-              style={styles.nextButton}
-              onPress={() => router.push("/main")}
+              style={[styles.nextButton, loading && styles.nextButtonDisabled]}
+              onPress={handleLogin}
               activeOpacity={0.85}
+              disabled={loading}
             >
-              <Text style={styles.nextButtonText}>Next {">"}</Text>
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.nextButtonText}>Next {">"}</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.bottomRow}>
@@ -249,6 +275,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  nextButtonDisabled: {
+    opacity: 0.7,
   },
   nextButtonText: {
     color: "#FFFFFF",

@@ -1,5 +1,6 @@
+import { supabase } from '../supabase';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Image,
   ScrollView,
@@ -51,6 +52,34 @@ const POPULAR = [
 
 export default function MainScreen() {
   const [activeCategory, setActiveCategory] = useState(0);
+  const [userName, setUserName] = useState('Evanneskyr');
+  const [userInitials, setUserInitials] = useState('EV');
+
+  // Ambil data user dari Supabase Auth
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const fullName: string =
+          user.user_metadata?.full_name ?? user.email ?? 'User';
+        setUserName(fullName.split(' ')[0]);
+        const initials = fullName
+          .split(' ')
+          .slice(0, 2)
+          .map((n: string) => n[0]?.toUpperCase() ?? '')
+          .join('');
+        setUserInitials(initials || 'US');
+      }
+    };
+    getUser();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace('/');
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -63,10 +92,10 @@ export default function MainScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Good morning 👋</Text>
-            <Text style={styles.userName}>Evanneskyr!</Text>
+            <Text style={styles.userName}>{userName}!</Text>
           </View>
           <TouchableOpacity style={styles.avatarBtn}>
-            <Text style={styles.avatarText}>EV</Text>
+            <Text style={styles.avatarText}>{userInitials}</Text>
           </TouchableOpacity>
         </View>
 
@@ -171,10 +200,26 @@ export default function MainScreen() {
           ))}
         </View>
 
+        {/* ── Dompet shortcut ── */}
+        <TouchableOpacity
+          style={styles.dompetBtn}
+          onPress={() => router.push('/dompet' as any)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.dompetBtnLeft}>
+            <Text style={styles.dompetBtnIcon}>👛</Text>
+            <View>
+              <Text style={styles.dompetBtnTitle}>Dompet Saya</Text>
+              <Text style={styles.dompetBtnSub}>Kelola saldo & dompet</Text>
+            </View>
+          </View>
+          <Text style={styles.dompetBtnArrow}>›</Text>
+        </TouchableOpacity>
+
         {/* ── Logout ── */}
         <TouchableOpacity
           style={styles.logoutBtn}
-          onPress={() => router.replace('/')}
+          onPress={handleLogout}
           activeOpacity={0.8}
         >
           <Text style={styles.logoutText}>← Sign Out</Text>
@@ -442,6 +487,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   popularBadgeText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+
+  /* Dompet shortcut */
+  dompetBtn: {
+    marginHorizontal: 24,
+    marginBottom: 14,
+    borderRadius: 16,
+    backgroundColor: '#EEF0FF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: '#D8DAFF',
+  },
+  dompetBtnLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dompetBtnIcon: { fontSize: 26 },
+  dompetBtnTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1A2E',
+    marginBottom: 2,
+  },
+  dompetBtnSub: {
+    fontSize: 11,
+    color: '#8A8A9A',
+  },
+  dompetBtnArrow: {
+    fontSize: 24,
+    color: '#5B67F8',
+    fontWeight: '300',
+  },
 
   /* Logout */
   logoutBtn: {

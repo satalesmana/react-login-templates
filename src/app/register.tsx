@@ -1,7 +1,10 @@
+import { supabase } from "../supabase";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Dimensions,
   Image,
   KeyboardAvoidingView,
@@ -28,6 +31,41 @@ export default function RegisterScreen() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Email dan password wajib diisi.");
+      return;
+    }
+    if (!agreed) {
+      Alert.alert("Error", "Harap setujui syarat dan ketentuan terlebih dahulu.");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          phone,
+        },
+      },
+    });
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Registrasi Gagal", error.message);
+    } else {
+      Alert.alert(
+        "Registrasi Berhasil! 🎉",
+        "Akun Anda telah dibuat. Silakan cek email untuk konfirmasi, lalu login.",
+        [{ text: "OK", onPress: () => router.replace("/login") }]
+      );
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -141,11 +179,16 @@ export default function RegisterScreen() {
           {/* ── Button + Links ── */}
           <View style={styles.buttonWrapper}>
             <TouchableOpacity
-              style={styles.nextButton}
-              onPress={() => router.replace("/login")}
+              style={[styles.nextButton, loading && styles.nextButtonDisabled]}
+              onPress={handleRegister}
               activeOpacity={0.85}
+              disabled={loading}
             >
-              <Text style={styles.nextButtonText}>Next {">"}</Text>
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.nextButtonText}>Next {">"}</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.bottomRow}>
@@ -274,6 +317,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  nextButtonDisabled: {
+    opacity: 0.7,
   },
   nextButtonText: {
     color: "#FFFFFF",

@@ -18,6 +18,7 @@ export default function RootLayout() {
         <Stack.Screen name="register" />
         <Stack.Screen name="login" />
         <Stack.Screen name="main" />
+        <Stack.Screen name="dompet" />
       </Stack>
     </>
   );
