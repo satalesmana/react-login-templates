@@ -128,6 +128,20 @@ export default function Index() {
     message: string;
   }>({ visible: false, message: '' });
 
+  // View state: 'input' or 'dashboard'
+  const [currentView, setCurrentView] = useState<'input' | 'dashboard'>('input');
+  const [activeWallet, setActiveWallet] = useState<{
+    name: string;
+    balance: number;
+    design: CardDesign;
+    accent: AccentOption;
+  }>({
+    name: 'Dompet Utama',
+    balance: 0,
+    design: CARD_DESIGNS[0],
+    accent: ACCENT_OPTIONS[0],
+  });
+
   // Wallet Form State
   const [walletName, setWalletName] = useState('Dompet Utama');
   const [balance, setBalance] = useState<number>(0);
@@ -154,7 +168,7 @@ export default function Index() {
         setLocalUser(storedUser);
         const currentUserId = (supabaseClaims?.sub as string) || storedUser?.id || '';
         const { data } = await getDompetList(currentUserId);
-        if (data) {
+        if (data && data.length > 0) {
           setSavedDompets(data);
         }
       })
@@ -204,6 +218,22 @@ export default function Index() {
     setBalance((prev) => prev + amount);
   }
 
+  // Pilih Tema / Desain Langsung Buka Dashboard Tema Terpilih
+  function handleSelectThemeAndOpenDashboard(design: CardDesign) {
+    setSelectedDesignId(design.id);
+    setActiveWallet({
+      name: walletName.trim() || 'Dompet Utama',
+      balance: balance,
+      design: design,
+      accent: selectedAccent,
+    });
+    setLoadingAction({ visible: true, message: `Menerapkan tema ${design.name}...` });
+    setTimeout(() => {
+      setLoadingAction({ visible: false, message: '' });
+      setCurrentView('dashboard');
+    }, 400);
+  }
+
   async function handleSaveWallet() {
     setNotification(null);
     if (!walletName.trim()) {
@@ -217,8 +247,6 @@ export default function Index() {
 
     setLoadingAction({ visible: true, message: 'Menyimpan dompet ke Supabase...' });
 
-    // Sesuai materi insert dompet di Supabase:
-    // await supabase.from('dompet').insert([{ userId, name, balance, cardBackground, cardColor }])
     const { data, error } = await insertDompet({
       userId: currentUserId,
       name: walletName.trim(),
@@ -243,19 +271,29 @@ export default function Index() {
       setSavedDompets(updated.data);
     }
 
-    const successMsg = `Dompet "${walletName.trim()}" (Rp ${formatRupiah(balance)}) berhasil disimpan ke tabel dompet!`;
+    setActiveWallet({
+      name: walletName.trim(),
+      balance: balance,
+      design: selectedDesign,
+      accent: selectedAccent,
+    });
+
+    const successMsg = `Dompet "${walletName.trim()}" (Rp ${formatRupiah(balance)}) berhasil disimpan!`;
     setNotification({
       message: successMsg,
       type: 'success',
     });
-    Alert.alert('Berhasil', successMsg);
+
+    // Otomatis langsung masuk ke menu dashboard dompet
+    setTimeout(() => {
+      setCurrentView('dashboard');
+    }, 500);
   }
 
   async function executeDelete(id: number | string, name: string) {
     try {
       setLoadingAction({ visible: true, message: 'Menghapus dompet...' });
       await deleteDompet(id);
-      // Immediately filter out locally from state so it disappears right away
       setSavedDompets((prev) => prev.filter((item) => String(item.id) !== String(id)));
       const updated = await getDompetList(currentUserId);
       if (updated.data) {
@@ -276,7 +314,6 @@ export default function Index() {
   }
 
   function handleDeleteWallet(id: number | string, name: string) {
-    // Directly delete to avoid web preview blocking confirm popups
     executeDelete(id, name);
   }
 
@@ -291,6 +328,232 @@ export default function Index() {
     router.replace('/(auth)/sign-in');
   }
 
+  // ==========================================
+  // VIEW: DASHBOARD DOMPET AKTIF
+  // ==========================================
+  if (currentView === 'dashboard') {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <LoadingUI visible={loadingAction.visible} message={loadingAction.message} />
+
+        {/* Top Header Dashboard */}
+        <View className="flex-row items-center justify-between px-5 py-3.5 bg-white border-b border-slate-100">
+          <View className="flex-row items-center">
+            <TouchableOpacity
+              onPress={() => setCurrentView('input')}
+              className="p-1.5 -ml-1.5 mr-2 rounded-full"
+              activeOpacity={0.7}
+            >
+              <Feather name="arrow-left" size={20} color="#0f172a" />
+            </TouchableOpacity>
+            <View>
+              <Text className="text-[16px] font-bold text-[#0f172a]">Dashboard Dompet</Text>
+              <Text className="text-[11px] text-[#64748b]">Tema: {activeWallet.design.name}</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            onPress={handleCancelOrBack}
+            className="flex-row items-center bg-red-50 px-2.5 py-1.5 rounded-lg border border-red-200"
+          >
+            <Feather name="log-out" size={13} color="#dc2626" />
+            <Text className="text-[11px] font-bold text-red-600 ml-1">Logout</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingTop: 20,
+            paddingBottom: 30,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Active Card with Selected Theme */}
+          <View
+            style={{
+              backgroundColor: activeWallet.design.bgPrimary,
+              borderRadius: 22,
+              padding: 24,
+              marginBottom: 22,
+              shadowColor: activeWallet.design.bgSecondary,
+              shadowOffset: { width: 0, height: 12 },
+              shadowOpacity: 0.32,
+              shadowRadius: 18,
+              elevation: 10,
+              overflow: 'hidden',
+            }}
+          >
+            <View
+              style={{
+                position: 'absolute',
+                top: -40,
+                left: -30,
+                width: 170,
+                height: 170,
+                borderRadius: 85,
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              }}
+            />
+            <View
+              style={{
+                position: 'absolute',
+                bottom: -50,
+                right: -20,
+                width: 190,
+                height: 190,
+                borderRadius: 95,
+                backgroundColor: 'rgba(0, 0, 0, 0.18)',
+              }}
+            />
+
+            <View className="flex-row items-center justify-between mb-6">
+              <View className="flex-row items-center">
+                <View
+                  style={{
+                    width: 40,
+                    height: 28,
+                    borderRadius: 6,
+                    backgroundColor: '#eab308',
+                    paddingHorizontal: 5,
+                    paddingVertical: 5,
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <View style={{ height: 1.5, backgroundColor: 'rgba(113, 63, 18, 0.35)', width: '100%' }} />
+                  <View style={{ height: 1.5, backgroundColor: 'rgba(113, 63, 18, 0.35)', width: '75%' }} />
+                  <View style={{ height: 1.5, backgroundColor: 'rgba(113, 63, 18, 0.35)', width: '100%' }} />
+                </View>
+
+                <View
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    borderWidth: 1.2,
+                    borderColor: 'rgba(255,255,255,0.65)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginLeft: 10,
+                  }}
+                >
+                  <MaterialCommunityIcons name="contactless-payment" size={14} color="rgba(255,255,255,0.9)" />
+                </View>
+              </View>
+
+              <View
+                style={{
+                  backgroundColor: 'rgba(15, 23, 42, 0.45)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 5,
+                  borderRadius: 999,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
+              >
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#34d399', marginRight: 6 }} />
+                <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 }}>
+                  PAYNEX E-WALLET
+                </Text>
+              </View>
+            </View>
+
+            <View className="mb-6">
+              <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '600', letterSpacing: 0.8 }}>
+                SALDO TERSEDIA
+              </Text>
+              <Text style={{ color: activeWallet.accent.textColor, fontSize: 32, fontWeight: '800', marginTop: 2 }}>
+                Rp {formatRupiah(activeWallet.balance)}
+              </Text>
+            </View>
+
+            <View className="flex-row items-end justify-between">
+              <View className="flex-1 mr-4">
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9.5, fontWeight: '600', letterSpacing: 0.8 }}>
+                  NAMA DOMPET
+                </Text>
+                <Text numberOfLines={1} style={{ color: activeWallet.accent.textColor, fontSize: 16, fontWeight: '700', marginTop: 2 }}>
+                  {activeWallet.name}
+                </Text>
+              </View>
+
+              <View className="items-end">
+                <Text style={{ color: activeWallet.accent.textColor, fontSize: 11.5, fontWeight: '700', letterSpacing: 1.5 }}>
+                  ••••  9021
+                </Text>
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: '600', letterSpacing: 0.5, marginTop: 2 }}>
+                  VALID THRU 12/29
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Quick Action Menus */}
+          <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-5">
+            <Text className="text-[13px] font-bold text-[#1e293b] mb-3">Menu Cepat Dompet</Text>
+            <View className="flex-row items-center justify-around">
+              <TouchableOpacity
+                onPress={() => {
+                  setActiveWallet((prev) => ({ ...prev, balance: prev.balance + 100000 }));
+                  Alert.alert('Top Up Berhasil', 'Saldo bertambah Rp 100.000');
+                }}
+                className="items-center"
+              >
+                <View className="w-12 h-12 rounded-2xl bg-indigo-50 items-center justify-center mb-1.5 border border-indigo-100">
+                  <Feather name="plus-circle" size={22} color="#4f46e5" />
+                </View>
+                <Text className="text-[11px] font-semibold text-slate-700">Top Up</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Alert.alert('Transfer', 'Fitur transfer saldo siap digunakan')}
+                className="items-center"
+              >
+                <View className="w-12 h-12 rounded-2xl bg-emerald-50 items-center justify-center mb-1.5 border border-emerald-100">
+                  <Feather name="arrow-up-right" size={22} color="#059669" />
+                </View>
+                <Text className="text-[11px] font-semibold text-slate-700">Transfer</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Alert.alert('Riwayat Transaksi', 'Belum ada transaksi riwayat baru')}
+                className="items-center"
+              >
+                <View className="w-12 h-12 rounded-2xl bg-amber-50 items-center justify-center mb-1.5 border border-amber-100">
+                  <Feather name="clock" size={22} color="#d97706" />
+                </View>
+                <Text className="text-[11px] font-semibold text-slate-700">Riwayat</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setCurrentView('input')}
+                className="items-center"
+              >
+                <View className="w-12 h-12 rounded-2xl bg-slate-100 items-center justify-center mb-1.5 border border-slate-200">
+                  <Feather name="edit-3" size={20} color="#334155" />
+                </View>
+                <Text className="text-[11px] font-semibold text-slate-700">Ganti Tema</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Button to go back to edit/create wallet */}
+          <TouchableOpacity
+            onPress={() => setCurrentView('input')}
+            activeOpacity={0.8}
+            className="bg-indigo-600 rounded-xl py-3.5 items-center justify-center flex-row shadow-sm"
+          >
+            <Feather name="plus" size={17} color="#ffffff" />
+            <Text className="text-white font-bold text-sm ml-2">Buat / Edit Dompet Lain</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // ==========================================
+  // VIEW: FORM INPUT / PILIH TEMA DOMPET
+  // ==========================================
   return (
     <SafeAreaView className="flex-1 bg-white">
       <LoadingUI visible={loadingAction.visible} message={loadingAction.message} />
@@ -378,7 +641,6 @@ export default function Index() {
               overflow: 'hidden',
             }}
           >
-            {/* Decorative soft glow circles inside card */}
             <View
               style={{
                 position: 'absolute',
@@ -402,10 +664,8 @@ export default function Index() {
               }}
             />
 
-            {/* Card Top Row: Chip + NFC & PAYNEX E-WALLET Badge */}
             <View className="flex-row items-center justify-between mb-6">
               <View className="flex-row items-center">
-                {/* Gold EMV Chip */}
                 <View
                   style={{
                     width: 38,
@@ -417,30 +677,11 @@ export default function Index() {
                     justifyContent: 'space-between',
                   }}
                 >
-                  <View
-                    style={{
-                      height: 1.5,
-                      backgroundColor: 'rgba(113, 63, 18, 0.35)',
-                      width: '100%',
-                    }}
-                  />
-                  <View
-                    style={{
-                      height: 1.5,
-                      backgroundColor: 'rgba(113, 63, 18, 0.35)',
-                      width: '75%',
-                    }}
-                  />
-                  <View
-                    style={{
-                      height: 1.5,
-                      backgroundColor: 'rgba(113, 63, 18, 0.35)',
-                      width: '100%',
-                    }}
-                  />
+                  <View style={{ height: 1.5, backgroundColor: 'rgba(113, 63, 18, 0.35)', width: '100%' }} />
+                  <View style={{ height: 1.5, backgroundColor: 'rgba(113, 63, 18, 0.35)', width: '75%' }} />
+                  <View style={{ height: 1.5, backgroundColor: 'rgba(113, 63, 18, 0.35)', width: '100%' }} />
                 </View>
 
-                {/* Contactless Icon */}
                 <View
                   style={{
                     width: 22,
@@ -453,15 +694,10 @@ export default function Index() {
                     marginLeft: 10,
                   }}
                 >
-                  <MaterialCommunityIcons
-                    name="contactless-payment"
-                    size={13}
-                    color="rgba(255,255,255,0.9)"
-                  />
+                  <MaterialCommunityIcons name="contactless-payment" size={13} color="rgba(255,255,255,0.9)" />
                 </View>
               </View>
 
-              {/* PAYNEX E-WALLET Pill */}
               <View
                 style={{
                   backgroundColor: 'rgba(15, 23, 42, 0.42)',
@@ -472,98 +708,37 @@ export default function Index() {
                   alignItems: 'center',
                 }}
               >
-                <View
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: '#34d399',
-                    marginRight: 6,
-                  }}
-                />
-                <Text
-                  style={{
-                    color: '#ffffff',
-                    fontSize: 9.5,
-                    fontWeight: '700',
-                    letterSpacing: 0.7,
-                  }}
-                >
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#34d399', marginRight: 6 }} />
+                <Text style={{ color: '#ffffff', fontSize: 9.5, fontWeight: '700', letterSpacing: 0.7 }}>
                   PAYNEX E-WALLET
                 </Text>
               </View>
             </View>
 
-            {/* Card Middle: Saldo Tersedia */}
             <View className="mb-6">
-              <Text
-                style={{
-                  color: 'rgba(255,255,255,0.72)',
-                  fontSize: 10,
-                  fontWeight: '600',
-                  letterSpacing: 0.8,
-                }}
-              >
+              <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 10, fontWeight: '600', letterSpacing: 0.8 }}>
                 SALDO TERSEDIA
               </Text>
-              <Text
-                style={{
-                  color: selectedAccent.textColor,
-                  fontSize: 27,
-                  fontWeight: '800',
-                  marginTop: 2,
-                }}
-              >
+              <Text style={{ color: selectedAccent.textColor, fontSize: 27, fontWeight: '800', marginTop: 2 }}>
                 Rp {formatRupiah(balance)}
               </Text>
             </View>
 
-            {/* Card Bottom Row: Nama Dompet & Card Number */}
             <View className="flex-row items-end justify-between">
               <View className="flex-1 mr-4">
-                <Text
-                  style={{
-                    color: 'rgba(255,255,255,0.68)',
-                    fontSize: 9,
-                    fontWeight: '600',
-                    letterSpacing: 0.8,
-                  }}
-                >
+                <Text style={{ color: 'rgba(255,255,255,0.68)', fontSize: 9, fontWeight: '600', letterSpacing: 0.8 }}>
                   NAMA DOMPET
                 </Text>
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    color: selectedAccent.textColor,
-                    fontSize: 15,
-                    fontWeight: '700',
-                    marginTop: 2,
-                  }}
-                >
+                <Text numberOfLines={1} style={{ color: selectedAccent.textColor, fontSize: 15, fontWeight: '700', marginTop: 2 }}>
                   {walletName.trim() || 'Dompet Utama'}
                 </Text>
               </View>
 
               <View className="items-end">
-                <Text
-                  style={{
-                    color: selectedAccent.textColor,
-                    fontSize: 11,
-                    fontWeight: '700',
-                    letterSpacing: 1.5,
-                  }}
-                >
+                <Text style={{ color: selectedAccent.textColor, fontSize: 11, fontWeight: '700', letterSpacing: 1.5 }}>
                   ••••  9021
                 </Text>
-                <Text
-                  style={{
-                    color: 'rgba(255,255,255,0.68)',
-                    fontSize: 9,
-                    fontWeight: '600',
-                    letterSpacing: 0.5,
-                    marginTop: 2,
-                  }}
-                >
+                <Text style={{ color: 'rgba(255,255,255,0.68)', fontSize: 9, fontWeight: '600', letterSpacing: 0.5, marginTop: 2 }}>
                   VALID THRU 12/29
                 </Text>
               </View>
@@ -592,11 +767,7 @@ export default function Index() {
             </View>
 
             {/* Preset Chips */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8 }}
-            >
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {WALLET_PRESETS.map((preset) => {
                 const isSelected =
                   walletName.toLowerCase() === preset.toLowerCase() ||
@@ -615,13 +786,7 @@ export default function Index() {
                       borderRadius: 999,
                     }}
                   >
-                    <Text
-                      style={{
-                        color: isSelected ? '#312e81' : '#334155',
-                        fontSize: 12,
-                        fontWeight: '600',
-                      }}
-                    >
+                    <Text style={{ color: isSelected ? '#312e81' : '#334155', fontSize: 12, fontWeight: '600' }}>
                       {preset}
                     </Text>
                   </TouchableOpacity>
@@ -634,9 +799,7 @@ export default function Index() {
           <View className="mb-5">
             <View className="flex-row items-center justify-between mb-2">
               <Text className="text-[13.5px] font-bold text-[#1e293b]">Saldo Awal</Text>
-              <Text className="text-[11px] font-semibold text-[#15803d]">
-                Bebas Biaya Admin
-              </Text>
+              <Text className="text-[11px] font-semibold text-[#15803d]">Bebas Biaya Admin</Text>
             </View>
 
             <View className="flex-row items-center bg-[#f8fafc] border border-[#f1f5f9] rounded-xl px-4 py-2.5">
@@ -655,7 +818,6 @@ export default function Index() {
               Saldo saat dompet baru ini dibuat (default Rp 0).
             </Text>
 
-            {/* Quick Add Balance Buttons */}
             <View className="flex-row items-center" style={{ gap: 10 }}>
               {[
                 { label: '100 Rb', value: 100000 },
@@ -675,13 +837,13 @@ export default function Index() {
             </View>
           </View>
 
-          {/* Section 3: Pilihan Desain Kartu */}
+          {/* Section 3: Pilihan Desain Kartu (Klik tema langsung buka dashboard) */}
           <View className="mb-5">
             <View className="flex-row items-center justify-between mb-2.5">
-              <Text className="text-[13.5px] font-bold text-[#1e293b]">
-                Pilihan Desain Kartu
+              <Text className="text-[13.5px] font-bold text-[#1e293b]">Pilihan Desain Kartu</Text>
+              <Text className="text-[11px] font-semibold text-indigo-600">
+                Pilih tema langsung masuk dashboard 👉
               </Text>
-              <Text className="text-[11px] text-[#64748b]">{selectedDesign.name}</Text>
             </View>
 
             <View className="flex-row items-center justify-between">
@@ -690,8 +852,8 @@ export default function Index() {
                 return (
                   <TouchableOpacity
                     key={design.id}
-                    activeOpacity={0.85}
-                    onPress={() => setSelectedDesignId(design.id)}
+                    activeOpacity={0.8}
+                    onPress={() => handleSelectThemeAndOpenDashboard(design)}
                     style={{
                       width: 56,
                       height: 56,
@@ -713,9 +875,7 @@ export default function Index() {
           {/* Section 4: Warna Huruf & Aksen */}
           <View className="mb-6">
             <View className="flex-row items-center justify-between mb-2.5">
-              <Text className="text-[13.5px] font-bold text-[#1e293b]">
-                Warna Huruf & Aksen
-              </Text>
+              <Text className="text-[13.5px] font-bold text-[#1e293b]">Warna Huruf & Aksen</Text>
               <Text className="text-[11px] text-[#64748b]">{selectedAccent.subtitle}</Text>
             </View>
 
@@ -751,13 +911,7 @@ export default function Index() {
                         marginRight: 6,
                       }}
                     />
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: '700',
-                        color: '#0f172a',
-                      }}
-                    >
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#0f172a' }}>
                       {accent.label}
                     </Text>
                   </TouchableOpacity>
@@ -819,11 +973,7 @@ export default function Index() {
               elevation: 5,
             }}
           >
-            <MaterialCommunityIcons
-              name="credit-card-plus-outline"
-              size={18}
-              color="#ffffff"
-            />
+            <MaterialCommunityIcons name="credit-card-plus-outline" size={18} color="#ffffff" />
             <Text className="text-white font-bold text-[14.5px] ml-2">Simpan ke Tabel Dompet</Text>
           </TouchableOpacity>
 
@@ -860,20 +1010,27 @@ export default function Index() {
                   }}
                   className="flex-row items-center justify-between"
                 >
-                  <View className="flex-1 mr-3">
-                    <Text
-                      style={{ color: item.cardColor || '#ffffff' }}
-                      className="text-[14px] font-bold"
-                    >
+                  <TouchableOpacity
+                    onPress={() => {
+                      const matched = CARD_DESIGNS.find((d) => d.bgPrimary === item.cardBackground) || CARD_DESIGNS[0];
+                      setActiveWallet({
+                        name: item.name,
+                        balance: item.balance,
+                        design: matched,
+                        accent: selectedAccent,
+                      });
+                      setCurrentView('dashboard');
+                    }}
+                    className="flex-1 mr-3"
+                  >
+                    <Text style={{ color: item.cardColor || '#ffffff' }} className="text-[14px] font-bold">
                       {item.name}
                     </Text>
-                    <Text
-                      style={{ color: item.cardColor || '#ffffff', opacity: 0.9 }}
-                      className="text-[15px] font-extrabold mt-0.5"
-                    >
+                    <Text style={{ color: item.cardColor || '#ffffff', opacity: 0.9 }} className="text-[15px] font-extrabold mt-0.5">
                       Rp {formatRupiah(item.balance)}
                     </Text>
-                  </View>
+                    <Text className="text-white/60 text-[10px] mt-0.5">Ketuk untuk buka dashboard 👉</Text>
+                  </TouchableOpacity>
 
                   <TouchableOpacity
                     onPress={() => item.id !== undefined && handleDeleteWallet(item.id, item.name)}
