@@ -12,21 +12,21 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { authenticateLocalAccount } from "../auth/accountStore";
 import { AuthIllustration, AuthWave } from "../components/AuthIllustration";
-import SocialButtons from "../components/SocialButtons";
+import { getSupabase } from "../lib/supabase";
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setErrorMessage("");
-    const identifier = email.trim();
-    if (!identifier) {
-      setErrorMessage("Masukkan username atau email.");
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setErrorMessage("Masukkan email.");
       return;
     }
     if (!password) {
@@ -34,23 +34,48 @@ export default function LoginScreen() {
       return;
     }
 
-    const account = authenticateLocalAccount(identifier, password);
-    if (!account) {
-      setErrorMessage("Email atau kata sandi salah. Silakan coba lagi atau daftar.");
+    setIsLoading(true);
+    try {
+      const { error } = await getSupabase().auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+      if (error) throw error;
+      router.replace("/main");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Login gagal. Silakan coba lagi."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setErrorMessage("Masukkan email untuk menerima tautan pemulihan.");
       return;
     }
 
-    router.replace({
-      pathname: "/main",
-      params: { userName: account.name, userEmail: account.email },
-    });
-  };
-
-  const handleForgotPassword = () => {
-    Alert.alert(
-      "Lupa kata sandi",
-      "Fitur pemulihan kata sandi belum tersedia di demo ini."
-    );
+    try {
+      const { error } = await getSupabase().auth.resetPasswordForEmail(
+        normalizedEmail
+      );
+      if (error) throw error;
+      Alert.alert(
+        "Periksa email",
+        "Jika email terdaftar, tautan pemulihan kata sandi akan dikirim."
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Tautan pemulihan gagal dikirim."
+      );
+    }
   };
 
   return (
@@ -75,7 +100,7 @@ export default function LoginScreen() {
           <TextInput
             accessibilityLabel="Email"
             className="mb-2 rounded-md border border-[#c9c1bf] px-3.5 py-3 text-sm text-[#222]"
-            placeholder="Username or email"
+            placeholder="Email"
             placeholderTextColor="#777"
             value={email}
             onChangeText={(value) => {
@@ -126,12 +151,14 @@ export default function LoginScreen() {
             accessibilityRole="button"
             activeOpacity={0.85}
             onPress={handleLogin}
+            disabled={isLoading}
             className="items-center rounded-md bg-[#1769F6] py-3.5"
           >
-            <Text className="text-base font-bold text-white">Login</Text>
+            <Text className="text-base font-bold text-white">
+              {isLoading ? "Memproses..." : "Login"}
+            </Text>
           </TouchableOpacity>
 
-          <SocialButtons />
           <View className="mt-auto flex-row items-center justify-center pt-5">
             <Text className="text-sm text-[#666]">Belum punya akun? </Text>
             <TouchableOpacity

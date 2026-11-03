@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,9 +12,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { createLocalAccount } from "../auth/accountStore";
 import { AuthIllustration, AuthWave } from "../components/AuthIllustration";
-import SocialButtons from "../components/SocialButtons";
+import { getSupabase } from "../lib/supabase";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -22,8 +22,9 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setErrorMessage("");
     const normalizedEmail = email.trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,16 +43,48 @@ export default function RegisterScreen() {
       return;
     }
 
-    const account = createLocalAccount(name.trim(), normalizedEmail, password);
-    if (!account) {
-      setErrorMessage("Email ini sudah terdaftar. Silakan login.");
-      return;
-    }
+    setIsLoading(true);
+    try {
+      const { data, error } = await getSupabase().auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: { data: { full_name: name.trim() } },
+      });
+      if (error) throw error;
 
-    router.replace({
-      pathname: "/main",
-      params: { userName: account.name, userEmail: account.email },
-    });
+      if (data.session) {
+        router.replace("/main");
+      } else {
+        Alert.alert(
+          "Periksa email",
+          "Akun berhasil dibuat. Konfirmasi email Anda sebelum login."
+        );
+        router.replace("/login");
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message.toLowerCase() : "";
+
+      if (message.includes("rate limit") || message.includes("too many requests")) {
+        setErrorMessage(
+          "Batas email Supabase tercapai. Untuk development, matikan Confirm email di Supabase: Authentication → Sign In / Providers → Email. Jika masih dibatasi, tunggu batas email pulih sebelum mencoba lagi."
+        );
+      } else if (message.includes("already registered")) {
+        setErrorMessage(
+          "Email ini sudah terdaftar. Silakan login atau gunakan email lain."
+        );
+      } else if (message.includes("password")) {
+        setErrorMessage(
+          "Kata sandi tidak memenuhi aturan Supabase. Gunakan minimal 6 karakter dan periksa pengaturan password Auth."
+        );
+      } else if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("Pendaftaran gagal. Silakan coba lagi.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -76,7 +109,7 @@ export default function RegisterScreen() {
           <TextInput
             accessibilityLabel="Nama lengkap"
             className="mb-2 rounded-md border border-[#b9b0ae] px-3.5 py-3 text-sm text-[#222]"
-            placeholder="Full Name"
+            placeholder="Nama lengkap"
             placeholderTextColor="#777"
             value={name}
             onChangeText={(value) => {
@@ -110,7 +143,7 @@ export default function RegisterScreen() {
           />
           {emailTouched && email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? (
             <Text className="mb-2 ml-2 text-[10px] text-[#e25353]">
-              Please enter valid email !
+              Masukkan format email yang valid, contoh: udin@gmail.com
             </Text>
           ) : null}
           <View className="mb-2 flex-row items-center rounded-md border border-[#b9b0ae] px-3.5">
@@ -131,6 +164,9 @@ export default function RegisterScreen() {
               onSubmitEditing={handleRegister}
             />
           </View>
+          <Text className="mb-2 ml-1 text-[11px] text-[#777]">
+            Password minimal 6 karakter, contoh: 123456.
+          </Text>
 
           <View className="min-h-[25px] justify-center">
             {errorMessage ? (
@@ -144,12 +180,14 @@ export default function RegisterScreen() {
             accessibilityRole="button"
             activeOpacity={0.85}
             onPress={handleRegister}
+            disabled={isLoading}
             className="mt-1 items-center rounded-md bg-[#1769F6] py-3.5"
           >
-            <Text className="text-base font-bold text-white">Create account</Text>
+            <Text className="text-base font-bold text-white">
+              {isLoading ? "Memproses..." : "Buat akun"}
+            </Text>
           </TouchableOpacity>
 
-          <SocialButtons />
           <View className="mt-auto items-center pt-4">
             <TouchableOpacity
               accessibilityRole="button"

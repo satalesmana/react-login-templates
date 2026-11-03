@@ -1,56 +1,77 @@
-# Welcome to your Expo app 👋
+# Ghesa Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplikasi Expo untuk login, registrasi, dan pencatatan dompet pribadi menggunakan Supabase Auth dan database.
 
-## Get started
+## Menyiapkan Supabase
 
-1. Install dependencies
+1. Buat project di [Supabase](https://supabase.com/).
+2. Salin `.env.example` menjadi `.env`, lalu isi URL project dan anon/publishable key dari pengaturan API Supabase:
 
-   ```bash
-   npm install
+   ```env
+   EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
    ```
 
-2. Start the app
+3. Buka **SQL Editor** di dashboard Supabase, salin seluruh SQL di bagian [Struktur tabel dompet](#struktur-tabel-dompet) di bawah, lalu klik **Run**. Tabel tidak dibuat otomatis oleh aplikasi; error pada gambar muncul karena SQL ini belum dijalankan pada project Supabase yang dipakai aplikasi.
+4. Aktifkan provider Email di **Authentication → Sign In / Providers → Email**.
+5. Untuk development tanpa pengiriman email, matikan **Confirm email** pada pengaturan provider Email. Dengan begitu, alamat berformat valid seperti `udin@gmail.com` tidak perlu menerima email konfirmasi dan akun akan langsung masuk. Password `123456` memenuhi validasi aplikasi (minimal 6 karakter), selama minimum password di pengaturan Supabase tidak dibuat lebih panjang.
 
-   ```bash
-   npx expo start
-   ```
+Supabase membatasi pengiriman email bawaan project baru (2 email per jam). Jika muncul `email rate limit exceeded`, tunggu sampai kuota pulih; mematikan **Confirm email** mencegah email konfirmasi dikirim untuk registrasi berikutnya. Alamat tetap harus berformat email yang valid dan tidak boleh sudah terdaftar.
 
-In the output, you'll find options to open the app in a
+Jangan masukkan `service_role` key ke aplikasi. Gunakan anon/publishable key; akses tabel dibatasi oleh policy RLS.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Struktur tabel dompet
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Jalankan SQL berikut **satu kali** melalui Supabase → **SQL Editor** → **New query** → **Run**:
 
-## Get a fresh project
+```sql
+create table public.dompet (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  nama text not null check (char_length(btrim(nama)) > 0),
+  jenis text not null check (jenis in ('Tunai', 'Bank', 'E-Wallet', 'Lainnya')),
+  saldo numeric(14, 2) not null default 0 check (saldo >= 0),
+  created_at timestamptz not null default now()
+);
 
-When you're ready, run:
+create index dompet_user_id_created_at_idx
+  on public.dompet (user_id, created_at desc);
 
-```bash
-npm run reset-project
+alter table public.dompet enable row level security;
+
+create policy "Users can view their own wallets"
+  on public.dompet
+  for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
+
+create policy "Users can add their own wallets"
+  on public.dompet
+  for insert
+  to authenticated
+  with check ((select auth.uid()) = user_id);
+
+grant select, insert on table public.dompet to authenticated;
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Struktur kolom `public.dompet`:
 
-### Other setup steps
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | `uuid` | Primary key, dibuat otomatis |
+| `user_id` | `uuid` | Pemilik dompet, mengacu ke `auth.users.id` |
+| `nama` | `text` | Nama dompet, wajib diisi |
+| `jenis` | `text` | `Tunai`, `Bank`, `E-Wallet`, atau `Lainnya` |
+| `saldo` | `numeric(14,2)` | Saldo awal, default `0`, tidak boleh negatif |
+| `created_at` | `timestamptz` | Waktu pembuatan, diisi otomatis |
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Row Level Security membatasi baca dan tambah dompet pada pengguna yang sedang login. Setelah query sukses, muat ulang aplikasi dan coba simpan dompet lagi. SQL migrasi yang sama juga tersedia di `supabase/migrations/20261103000000_create_dompet.sql`.
 
-## Learn more
+## Menjalankan aplikasi
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npm install
+npx expo start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Setelah mengubah `.env`, mulai ulang Expo agar variabel environment dimuat kembali. Autentikasi menggunakan email dan kata sandi Supabase; halaman utama menampilkan dan menyimpan dompet berdasarkan akun yang sedang login.
