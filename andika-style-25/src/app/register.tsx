@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { MyTextInput } from "@/components";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   Image,
   Pressable,
@@ -10,39 +10,61 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { supabase } from "@/lib/supabase"; // Sesuaikan path ini dengan letak file supabase.ts kamu
 
-// Letakkan gambarnya di assets/images/rexodus-logo.png
 const LOGO_IMAGE = require("@/assets/images/rexodus-logo.png");
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const [firstName, setFirstName] = React.useState("");
-  const [lastName, setLastName] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [confirmPassword, setConfirmPassword] = React.useState("");
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState(""); // Menambahkan input email wajib untuk Supabase
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const onContinuePress = () => {
-    if (!firstName.trim() || !lastName.trim() || !password || !confirmPassword) {
-      alert("Please fill in all fields.");
+  const onContinuePress = async () => {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || !confirmPassword) {
+      Alert.alert("Error", "Please fill in all fields.");
       return;
     }
     if (password.length < 6) {
-      alert("Password must contain at least 6 characters.");
+      Alert.alert("Error", "Password must contain at least 6 characters.");
       return;
     }
     if (password !== confirmPassword) {
-      alert("Passwords do not match.");
+      Alert.alert("Error", "Passwords do not match.");
       return;
     }
 
-    alert(
-      "Form valid. This is a UI demo, so no new account was created. Please sign in using the provided dummy account."
-    );
-    router.replace("/login");
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password: password,
+      options: {
+        data: {
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+        },
+      },
+    });
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Registration Failed", error.message);
+    } else {
+      Alert.alert(
+        "Registration Successful!",
+        "Please check your email to verify your account before logging in."
+      );
+      router.replace("/login");
+    }
   };
 
   return (
@@ -96,6 +118,23 @@ export default function RegisterScreen() {
             />
             <View style={styles.fieldIcon} pointerEvents="none">
               <Ionicons name="person-outline" size={16} color="#E60012" />
+            </View>
+          </View>
+
+          <Text style={styles.label}>Email Address</Text>
+          <View style={styles.fieldWrapper}>
+            <MyTextInput
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              containerStyle={styles.inputContainer}
+              style={styles.inputText}
+            />
+            <View style={styles.fieldIcon} pointerEvents="none">
+              <Ionicons name="mail-outline" size={16} color="#E60012" />
             </View>
           </View>
 
@@ -175,9 +214,14 @@ export default function RegisterScreen() {
               pressed && styles.buttonPressed,
             ]}
             onPress={onContinuePress}
+            disabled={loading}
             accessibilityRole="button"
           >
-            <Text style={styles.continueText}>Continue</Text>
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.continueText}>Continue</Text>
+            )}
           </Pressable>
 
           <Pressable

@@ -1,7 +1,7 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { MyTextInput } from "@/components";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   Animated,
   Image,
@@ -12,10 +12,12 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { supabase } from "@/lib/supabase"; // Sesuaikan path ini dengan letak file supabase.ts kamu
 
-// Letakkan gambarnya di assets/images/rexodus-logo.png
 const LOGO_IMAGE = require("@/assets/images/rexodus-logo.png");
 
 type BrandName = "facebook" | "google" | "apple";
@@ -43,7 +45,7 @@ function HoverSocialIcon({
       onHoverIn={() => animate(1.2)}
       onHoverOut={() => animate(1)}
       accessibilityRole="image"
-      accessibilityLabel={`${name} icon (demo only)`}
+      accessibilityLabel={`${name} icon`}
       style={styles.socialPressable}
     >
       <Animated.View style={{ transform: [{ scale }] }}>
@@ -55,24 +57,29 @@ function HoverSocialIcon({
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [keepSignedIn, setKeepSignedIn] = React.useState(false);
-  const [showPassword, setShowPassword] = React.useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [keepSignedIn, setKeepSignedIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const onLoginPress = () => {
+  const onLoginPress = async () => {
     if (!email.trim() || !password) {
-      alert("Please fill in your email and password.");
+      Alert.alert("Error", "Please fill in your email and password.");
       return;
     }
 
-    if (
-      email.trim().toLowerCase() === "admin@gmail.com" &&
-      password === "admin123"
-    ) {
-      router.replace("/(admin)/home");
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password,
+    });
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Login Failed", error.message);
     } else {
-      alert("Invalid email or password.");
+      router.replace("/(admin)/home");
     }
   };
 
@@ -173,7 +180,7 @@ export default function LoginScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => alert("Password recovery is not available in this demo.")}
+              onPress={() => alert("Password recovery is not available.")}
               accessibilityRole="button"
             >
               <Text style={styles.forgotText}>Forgot password</Text>
@@ -186,9 +193,14 @@ export default function LoginScreen() {
               pressed && styles.buttonPressed,
             ]}
             onPress={onLoginPress}
+            disabled={loading}
             accessibilityRole="button"
           >
-            <Text style={styles.signInText}>Sign in</Text>
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.signInText}>Sign in</Text>
+            )}
           </Pressable>
 
           <View style={styles.dividerRow}>
