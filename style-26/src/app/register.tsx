@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { MySocialButton } from "../components";
+import { supabase } from "../lib/supabase";
 
 export default function RegisterScreen() {
   const [email, onChangeEmail] = React.useState("");
@@ -10,15 +11,33 @@ export default function RegisterScreen() {
   const [password, onChangePassword] = React.useState("");
   const [rememberMe, setRememberMe] = React.useState(true);
   const [showPassword, setShowPassword] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
   const router = useRouter();
 
-  const onSignUpPress = () => {
+  const onSignUpPress = async () => {
     if (email === "" || phone === "" || password === "") {
       alert("Please fill in all fields");
       return;
     }
-    alert("Account created!");
-    router.push("/login");
+    setLoading(true);
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+    });
+    setLoading(false);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    if (!session) {
+      alert("Please check your inbox for email verification!");
+      router.push("/login");
+      return;
+    }
+    router.replace("/(admin)/home");
   };
 
   return (
@@ -86,8 +105,14 @@ export default function RegisterScreen() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.primaryButton} onPress={onSignUpPress}>
-        <Text style={styles.primaryButtonText}>Sign Up</Text>
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={onSignUpPress}
+        disabled={loading}
+      >
+        <Text style={styles.primaryButtonText}>
+          {loading ? "Loading..." : "Sign Up"}
+        </Text>
       </TouchableOpacity>
 
       <View style={styles.dividerRow}>

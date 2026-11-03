@@ -3,25 +3,32 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { MySocialButton } from "../components";
+import { supabase } from "../lib/supabase";
 
 export default function LoginScreen() {
   const [email, onChangeEmail] = React.useState("");
   const [password, onChangePassword] = React.useState("");
   const [rememberMe, setRememberMe] = React.useState(true);
   const [showPassword, setShowPassword] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
   const router = useRouter();
 
-  const onLoginPress = () => {
+  const onLoginPress = async () => {
     if (email === "" || password === "") {
       alert("Please fill in all fields");
       return;
     }
-    if (email === "admin@gmail.com" && password === "tes123") {
-      router.replace("/(admin)/home");
-    } else {
-      alert("Invalid email or password");
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+    setLoading(false);
+    if (error) {
+      alert(error.message);
       return;
     }
+    router.replace("/(admin)/home");
   };
 
   return (
@@ -74,8 +81,14 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.primaryButton} onPress={onLoginPress}>
-        <Text style={styles.primaryButtonText}>Login</Text>
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={onLoginPress}
+        disabled={loading}
+      >
+        <Text style={styles.primaryButtonText}>
+          {loading ? "Loading..." : "Login"}
+        </Text>
       </TouchableOpacity>
 
       <View style={styles.dividerRow}>
