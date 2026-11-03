@@ -1,6 +1,7 @@
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import BackgroundCircles from '@/components/BackgroundCircles';
 import { Colors, Fonts } from '@/constants/theme';
 
@@ -30,6 +31,7 @@ const initials = PROFILE.name
   .toUpperCase();
 
 export default function MainScreen() {
+  const router = useRouter();
   return (
     <View style={styles.container}>
       <BackgroundCircles height={220} />
@@ -79,6 +81,18 @@ export default function MainScreen() {
                 </View>
                 <Ionicons name="pricetags-outline" size={72} color={Colors.primary} />
               </View>
+
+              {/* Dompet: pindah ke halaman input + list dompet */}
+              <Pressable
+                style={styles.walletRow}
+                onPress={() => router.push('/dompet' as never)}>
+                <Ionicons name="wallet-outline" size={22} color={Colors.text} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.walletTitle}>Dompet Saya</Text>
+                  <Text style={styles.walletSub}>Tambah & lihat dompet (Supabase)</Text>
+                </View>
+                <Ionicons name="chevron-forward-outline" size={20} color={Colors.muted} />
+              </Pressable>
 
               {/* Search */}
               <View style={styles.search}>
@@ -203,6 +217,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bannerBtnText: { fontFamily: Fonts.medium, fontSize: 13, color: Colors.text },
+
+  walletRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 18,
+    padding: 16,
+    borderRadius: 14,
+    backgroundColor: Colors.circleLight,
+  },
+  walletTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.text },
+  walletSub: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.muted, marginTop: 2 },
 
   search: {
     flexDirection: 'row',

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,11 +18,33 @@ import MiniShopLogo from '@/components/MiniShopLogo';
 import InputField from '@/components/InputField';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Fonts } from '@/constants/theme';
+import { supabase } from '@/lib/supabase';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin() {
+    if (!email.trim() || !password) {
+      Alert.alert('Belum lengkap', 'Isi email dan password dulu.');
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password,
+    });
+    setLoading(false);
+    if (error) {
+      // Pesan paling sering di sini: "Email not confirmed" kalau
+      // Confirm email masih ON dan akun belum dikonfirmasi lewat email.
+      Alert.alert('Login gagal', error.message);
+      return;
+    }
+    router.replace('/main' as never);
+  }
 
   return (
     <View style={styles.container}>
@@ -65,8 +88,8 @@ export default function LoginScreen() {
               </Pressable>
 
               <PrimaryButton
-                title="Login"
-                onPress={() => router.replace('/main' as never)}
+                title={loading ? 'Memproses...' : 'Login'}
+                onPress={handleLogin}
                 style={{ marginTop: 20 }}
               />
 
