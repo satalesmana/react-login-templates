@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '../lib/supabase';
 
 const PROFILE = {
   nama: 'Muhamad Reva Cahyadi',
@@ -17,10 +19,22 @@ const MENUS: { icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
 ];
 
 export default function MainScreen() {
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace('/sign-in');
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
-        {}
         <View className="flex-row items-center justify-between mt-4">
           <View className="flex-1 mr-3">
             <Text className="text-gray-400">Halo, selamat datang</Text>
@@ -43,10 +57,24 @@ export default function MainScreen() {
           <Text className="text-white/70 text-sm mt-3">{PROFILE.kampus}</Text>
         </View>
 
+        {userEmail ? (
+          <Text className="text-gray-500 text-sm mt-4">
+            Login sebagai: {userEmail}
+          </Text>
+        ) : null}
+
         <TouchableOpacity
-          onPress={() => router.replace('/sign-in')}
+          onPress={() => router.push('/dompet')}
+          activeOpacity={0.8}
+          className="bg-[#f43f5e] rounded-2xl py-4 items-center mt-6"
+        >
+          <Text className="text-white font-bold">Dompet Saya</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleLogout}
           activeOpacity={0.7}
-          className="border border-gray-200 rounded-2xl py-4 items-center mb-10"
+          className="border border-gray-200 rounded-2xl py-4 items-center mt-4 mb-10"
         >
           <Text className="text-[#f43f5e] font-bold">Keluar</Text>
         </TouchableOpacity>

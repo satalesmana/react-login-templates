@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Checkbox from '../components/Checkbox';
 import InputField from '../components/InputField';
 import PrimaryButton from '../components/PrimaryButton';
+import { supabase } from '../lib/supabase';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -20,13 +21,22 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [agree, setAgree] = useState(false);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!name.trim() || !email.trim() || !phone.trim() || !password.trim()) {
       Alert.alert('Belum lengkap', 'Isi semua kolom dulu ya.');
       return;
     }
     if (!agree) {
       Alert.alert('Syarat & Ketentuan', 'Centang persetujuan dulu ya.');
+      return;
+    }
+    const { error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: { data: { full_name: name, phone } },
+    });
+    if (error) {
+      Alert.alert('Gagal daftar', error.message);
       return;
     }
     Alert.alert('Berhasil', 'Akun dibuat! Silakan masuk.', [
@@ -42,11 +52,11 @@ export default function RegisterScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="items-center mt-2">
-        <Image
-          source={require('../assets/images/register.png')}
-          style={{ width: 224, height: 208 }}
-          resizeMode="contain"
-        />
+          <Image
+            source={require('../assets/images/register.png')}
+            style={{ width: 224, height: 208 }}
+            resizeMode="contain"
+          />
         </View>
         <Text className="text-3xl font-extrabold text-center text-black mt-2">
           Get Started

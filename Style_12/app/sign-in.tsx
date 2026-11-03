@@ -12,19 +12,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Checkbox from '../components/Checkbox';
 import InputField from '../components/InputField';
 import PrimaryButton from '../components/PrimaryButton';
-
+import { supabase } from '../lib/supabase';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
 
-  const handleNext = () => {
-    if (email.trim() === 'revcah@gmail.com' && password === 'rev123') {
-    router.replace('/main');
-      } else {
-    Alert.alert('Gagal masuk', 'Email atau password salah.');
-    return;
+  const handleNext = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Belum lengkap', 'Isi email dan password dulu ya.');
+      return;
+    }
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) {
+      Alert.alert('Login gagal', error.message);
+      return;
     }
     router.replace('/main');
   };
@@ -37,11 +43,11 @@ export default function SignInScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="items-center mt-2">
-        <Image
-          source={require('../assets/images/signin.png')}
-          style={{ width: 224, height: 208 }}
-          resizeMode="contain"
-        />
+          <Image
+            source={require('../assets/images/signin.png')}
+            style={{ width: 224, height: 208 }}
+            resizeMode="contain"
+          />
         </View>
         <Text className="text-3xl font-extrabold text-center text-black mt-2">
           Welcome back
