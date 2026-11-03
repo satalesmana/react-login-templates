@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 import {
   Image,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -15,8 +14,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.page}>
-
-        {/* Background PNG utuh */}
+        {/* Background Fruzzdigital */}
         <Image
           source={require("@/assets/images/fruzz-plants.png")}
           style={styles.background}
@@ -37,7 +35,7 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* Tombol bagian bawah */}
+        {/* Login dan Register */}
         <View style={styles.bottomSection}>
           <View style={styles.buttons}>
             <MyButton
@@ -52,22 +50,7 @@ export default function HomeScreen() {
               action={() => router.push("/register")}
             />
           </View>
-
-          <Pressable
-            style={styles.guestLink}
-            onPress={() =>
-              router.push({
-                pathname: "/(admin)/home",
-                params: { guest: "1" },
-              })
-            }
-          >
-            <Text style={styles.guestText}>
-              Continue as guest
-            </Text>
-          </Pressable>
         </View>
-
       </View>
     </SafeAreaView>
   );
@@ -121,15 +104,5 @@ const styles = StyleSheet.create({
   },
   buttons: {
     gap: 11,
-  },
-  guestLink: {
-    marginTop: 34,
-    alignItems: "center",
-    paddingVertical: 13,
-  },
-  guestText: {
-    color: "#19BDBE",
-    fontSize: 12,
-    fontWeight: "600",
   },
 });

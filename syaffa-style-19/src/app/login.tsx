@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { MyButton, MyTextInput } from "@/components";
+import { supabase } from "../../lib/supabase";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
@@ -16,27 +17,72 @@ export default function LoginScreen() {
   const [password, setPassword] = React.useState("");
   const [visible, setVisible] = React.useState(false);
   const [message, setMessage] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+
+  const loginInProgress = React.useRef(false);
   const router = useRouter();
 
-  const onLoginPress = () => {
-    if (!email.trim() || !password) {
+  // Login menggunakan Supabase Auth
+  const onLoginPress = async () => {
+    if (loginInProgress.current) return;
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail || !password) {
       setMessage("Email dan password harus diisi.");
       return;
     }
 
-    // Akun dummy untuk demonstrasi UTS, sesuai pola login latihan dosen.
-    if (email.trim().toLowerCase() === "admin@gmail.com" && password === "admin123") {
-      setMessage("");
+    loginInProgress.current = true;
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const { data, error } =
+        await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
+
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+
+      if (!data.session) {
+        setMessage(
+          "Sesi login tidak tersedia. Silakan coba lagi."
+        );
+        return;
+      }
+
       router.replace("/(admin)/home");
-    } else {
-      setMessage("Email atau password salah.");
+    } catch {
+      setMessage(
+        "Tidak dapat menghubungi Supabase. Periksa koneksi internet."
+      );
+    } finally {
+      loginInProgress.current = false;
+      setLoading(false);
     }
   };
 
   const socialIcons = [
-    { name: "logo-facebook" as const, color: "#1877F2", label: "Facebook" },
-    { name: "logo-google" as const, color: "#4285F4", label: "Google" },
-    { name: "logo-apple" as const, color: "#171717", label: "Apple" },
+    {
+      name: "logo-facebook" as const,
+      color: "#1877F2",
+      label: "Facebook",
+    },
+    {
+      name: "logo-google" as const,
+      color: "#4285F4",
+      label: "Google",
+    },
+    {
+      name: "logo-apple" as const,
+      color: "#171717",
+      label: "Apple",
+    },
   ];
 
   return (
@@ -53,7 +99,11 @@ export default function LoginScreen() {
             accessibilityLabel="Kembali ke Welcome"
             accessibilityRole="button"
           >
-            <Ionicons name="chevron-back" size={18} color="#20262B" />
+            <Ionicons
+              name="chevron-back"
+              size={18}
+              color="#20262B"
+            />
           </Pressable>
 
           <Text style={styles.title}>
@@ -69,6 +119,7 @@ export default function LoginScreen() {
               autoCapitalize="none"
               autoCorrect={false}
             />
+
             <MyTextInput
               placeholder="Enter your password"
               value={password}
@@ -78,11 +129,19 @@ export default function LoginScreen() {
                 <Pressable
                   onPress={() => setVisible(!visible)}
                   hitSlop={10}
-                  accessibilityLabel={visible ? "Sembunyikan password" : "Tampilkan password"}
+                  accessibilityLabel={
+                    visible
+                      ? "Sembunyikan password"
+                      : "Tampilkan password"
+                  }
                   accessibilityRole="button"
                 >
                   <Ionicons
-                    name={visible ? "eye-outline" : "eye-off-outline"}
+                    name={
+                      visible
+                        ? "eye-outline"
+                        : "eye-off-outline"
+                    }
                     size={18}
                     color="#969DA7"
                   />
@@ -92,27 +151,47 @@ export default function LoginScreen() {
 
             <Pressable
               style={styles.forgotLink}
-              onPress={() => setMessage("Reset password belum tersedia pada demo UTS.")}
+              onPress={() =>
+                setMessage(
+                  "Reset password belum tersedia."
+                )
+              }
               accessibilityRole="button"
             >
-              <Text style={styles.forgotText}>Forgot Password?</Text>
+              <Text style={styles.forgotText}>
+                Forgot Password?
+              </Text>
             </Pressable>
 
-            <View style={styles.loginButton}>
+            <View
+              style={[
+                styles.loginButton,
+                loading && styles.loadingButton,
+              ]}
+            >
               <MyButton
-                text="Login"
+                text={loading ? "Logging in..." : "Login"}
                 btnType="Primary"
                 action={onLoginPress}
               />
             </View>
 
-            {message ? <Text style={styles.message}>{message}</Text> : null}
+            {message ? (
+              <Text
+                style={styles.message}
+                accessibilityRole="alert"
+              >
+                {message}
+              </Text>
+            ) : null}
           </View>
 
           <View style={styles.socialArea}>
             <View style={styles.dividerRow}>
               <View style={styles.divider} />
-              <Text style={styles.dividerText}>Or Login with</Text>
+              <Text style={styles.dividerText}>
+                Or Login with
+              </Text>
               <View style={styles.divider} />
             </View>
 
@@ -125,19 +204,34 @@ export default function LoginScreen() {
                     pressed && styles.pressed,
                   ]}
                   accessibilityRole="button"
-                  accessibilityLabel={`Login ${item.label} demo`}
-                  onPress={() => setMessage(`Login ${item.label} belum tersedia pada demo UTS.`)}
+                  accessibilityLabel={`Login ${item.label}`}
+                  onPress={() =>
+                    setMessage(
+                      `Login ${item.label} belum tersedia.`
+                    )
+                  }
                 >
-                  <Ionicons name={item.name} size={24} color={item.color} />
+                  <Ionicons
+                    name={item.name}
+                    size={24}
+                    color={item.color}
+                  />
                 </Pressable>
               ))}
             </View>
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <Pressable onPress={() => router.push("/register")} accessibilityRole="button">
-              <Text style={styles.footerLink}>Register Now</Text>
+            <Text style={styles.footerText}>
+              Don't have an account?{" "}
+            </Text>
+            <Pressable
+              onPress={() => router.push("/register")}
+              accessibilityRole="button"
+            >
+              <Text style={styles.footerLink}>
+                Register Now
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -147,9 +241,18 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#FFFFFF" },
-  scroll: { flex: 1 },
-  scrollContent: { flexGrow: 1, alignItems: "center", paddingHorizontal: 25 },
+  screen: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: "center",
+    paddingHorizontal: 25,
+  },
   page: {
     flex: 1,
     width: "100%",
@@ -174,21 +277,51 @@ const styles = StyleSheet.create({
     lineHeight: 34,
     marginBottom: 28,
   },
-  form: { width: "100%" },
-  forgotLink: { alignSelf: "flex-end", paddingVertical: 5 },
-  forgotText: { color: "#555A60", fontSize: 12 },
-  loginButton: { marginTop: 13 },
+  form: {
+    width: "100%",
+  },
+  forgotLink: {
+    alignSelf: "flex-end",
+    paddingVertical: 5,
+  },
+  forgotText: {
+    color: "#555A60",
+    fontSize: 12,
+  },
+  loginButton: {
+    marginTop: 13,
+  },
+  loadingButton: {
+    opacity: 0.6,
+  },
   message: {
     color: "#A32929",
     textAlign: "center",
     fontSize: 12,
     marginTop: 12,
   },
-  socialArea: { marginTop: 28 },
-  dividerRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  divider: { height: 1, flex: 1, backgroundColor: "#E8E9ED" },
-  dividerText: { fontSize: 11, color: "#9AA1AE" },
-  socialRow: { flexDirection: "row", gap: 12, marginTop: 20 },
+  socialArea: {
+    marginTop: 28,
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  divider: {
+    height: 1,
+    flex: 1,
+    backgroundColor: "#E8E9ED",
+  },
+  dividerText: {
+    fontSize: 11,
+    color: "#9AA1AE",
+  },
+  socialRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+  },
   socialButton: {
     flex: 1,
     height: 49,
@@ -199,7 +332,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: "#FFFFFF",
   },
-  pressed: { opacity: 0.7, backgroundColor: "#F5F6F8" },
+  pressed: {
+    opacity: 0.7,
+    backgroundColor: "#F5F6F8",
+  },
   footer: {
     flexDirection: "row",
     alignItems: "center",
@@ -207,6 +343,13 @@ const styles = StyleSheet.create({
     marginTop: "auto",
     paddingTop: 35,
   },
-  footerText: { color: "#545A61", fontSize: 12 },
-  footerLink: { color: "#16B4B6", fontSize: 12, fontWeight: "600" },
+  footerText: {
+    color: "#545A61",
+    fontSize: 12,
+  },
+  footerLink: {
+    color: "#16B4B6",
+    fontSize: 12,
+    fontWeight: "600",
+  },
 });
