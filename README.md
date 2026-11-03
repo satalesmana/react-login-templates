@@ -1,4 +1,4 @@
-# Ghesa Mobile
+# Ferdi Mobile
 
 Aplikasi Expo untuk login, registrasi, dan pencatatan dompet pribadi menggunakan Supabase Auth dan database.
 
