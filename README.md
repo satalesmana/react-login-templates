@@ -1,5 +1,7 @@
 # Tugas UTS Mobile - Template Style 29 (Ghesa Raditya Rodibillah)
 
+`Mengunakan Laptop Ferdi-Mahrus, jadi commit sebelumnya atasnama ferdi, belum setting`
+
 Proyek aplikasi mobile menggunakan **React Native Expo (SDK 57)**, **Expo Router**, **NativeWind (Tailwind CSS)**, dan terintegrasi penuh dengan **Supabase Auth** & **Database (Tabel `dompet`)**. Desain antarmuka dibuat presisi mengikuti template **Style 29** pada Figma (Navy `#0D1E4C`, aksen oranye, dan tipografi modern).
 
 ---
@@ -7,12 +9,14 @@ Proyek aplikasi mobile menggunakan **React Native Expo (SDK 57)**, **Expo Router
 ## 🎯 Fitur yang Diimplementasikan
 
 ### 1. Integrasi Flow Supabase Auth (Tugas 1)
+
 - **Splash Screen (`src/app/index.tsx`)**: Mengecek sesi aktif Supabase via `supabase.auth.getSession()`. Jika pengguna sudah login sebelumnya, otomatis diarahkan langsung ke halaman utama (`/main`).
 - **Login (`src/app/login.tsx`)**: Login akun menggunakan `supabase.auth.signInWithPassword({ email, password })`. Dilengkapi validasi form, penanganan pesan error Supabase, status loading, dan tombol Forgot Password.
 - **Register (`src/app/register.tsx`)**: Registrasi pengguna baru menggunakan `supabase.auth.signUp({ email, password })`. Validasi password minimal 6 karakter, konfirmasi password, serta penanganan konfirmasi email otomatis.
 - **Main Dashboard (`src/app/main.tsx`)**: Menampilkan data email dan session aktif dari Supabase, indikator koneksi database, dan fitur Logout aman via `supabase.auth.signOut()`.
 
 ### 2. Tabel & UI Input Dompet (Tugas 2)
+
 - **Tabel Database `dompet`**: Skema tabel SQL untuk Supabase dengan dukungan Row Level Security (RLS) lengkap. File SQL siap pakai tersedia di [`supabase_dompet_table.sql`](./supabase_dompet_table.sql).
   - Kolom: `id` (UUID), `user_id` (UUID), `nama_dompet` (Text), `jenis_dompet` (Text: Bank, E-Wallet, Tunai, Tabungan), `saldo` (Numeric), `nomor_rekening` (Text), `catatan` (Text), `created_at`, `updated_at`.
 - **UI Input & Manajemen Dompet (`src/app/dompet.tsx`)**:
@@ -26,24 +30,32 @@ Proyek aplikasi mobile menggunakan **React Native Expo (SDK 57)**, **Expo Router
 ## 🚀 Cara Menjalankan Project
 
 ### 1. Konfigurasi Supabase
+
 Buka file `.env` di root direktori project, lalu masukkan kredensial Supabase Anda:
+
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJh......
 ```
-*(Kredensial dapat ditemukan di Dashboard Supabase: **Project Settings** -> **API**)*
+
+_(Kredensial dapat ditemukan di Dashboard Supabase: **Project Settings** -> **API**)_
 
 ### 2. Menjalankan Skrip SQL di Supabase
+
 1. Buka [Supabase Dashboard](https://supabase.com/dashboard) project Anda.
 2. Masuk ke menu **SQL Editor** -> **New Query**.
 3. Salin seluruh isi file [`supabase_dompet_table.sql`](./supabase_dompet_table.sql) lalu klik **Run**.
 
 ### 3. Menjalankan Aplikasi
+
 Jalankan perintah berikut di terminal:
+
 ```bash
 npx expo start
 ```
+
 Pilihan pengujian:
+
 - Tekan `a` untuk membuka di Android Emulator / HP (via Expo Go).
 - Tekan `w` untuk membuka di browser (Web).
 - Scan QR code menggunakan aplikasi Expo Go di smartphone Anda.
