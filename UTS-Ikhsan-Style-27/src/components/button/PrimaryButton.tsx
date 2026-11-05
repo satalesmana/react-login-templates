@@ -18,9 +18,9 @@ export function PrimaryButton({
   return (
     <TouchableOpacity
       activeOpacity={0.8}
-      className={`bg-primary rounded-lg py-4 items-center justify-center mt-2 flex-row ${
-        isDisabled ? 'opacity-60' : ''
-      }`}
+      className={`rounded-full py-4 items-center justify-center mt-2 flex-row ${
+        disabled && !loading ? 'bg-gray-200' : 'bg-primary'
+      } ${loading ? 'opacity-80' : ''}`}
       onPress={onPress}
       disabled={isDisabled}
     >
@@ -29,7 +29,13 @@ export function PrimaryButton({
           <ActivityIndicator size="small" color="#ffffff" />
         </View>
       )}
-      <Text className="text-white font-bold text-sm">{title}</Text>
+      <Text
+        className={`font-bold text-sm ${
+          disabled && !loading ? 'text-gray-500' : 'text-white'
+        }`}
+      >
+        {title}
+      </Text>
     </TouchableOpacity>
   );
 }

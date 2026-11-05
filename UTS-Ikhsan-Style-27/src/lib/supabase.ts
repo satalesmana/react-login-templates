@@ -32,6 +32,7 @@ export interface LocalUser {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   password: string;
 }
 
@@ -54,11 +55,16 @@ export async function saveRegisteredUser(user: Omit<LocalUser, 'id'>): Promise<L
   const normalizedEmail = user.email.trim().toLowerCase();
   const raw = await AsyncStorage.getItem(REGISTERED_USERS_KEY);
   const users: LocalUser[] = raw ? JSON.parse(raw) : [];
-  const existingIndex = users.findIndex((u) => u.email.toLowerCase() === normalizedEmail);
+  const existingIndex = users.findIndex(
+    (u) =>
+      (normalizedEmail && u.email.toLowerCase() === normalizedEmail) ||
+      (user.phone && u.phone === user.phone.trim())
+  );
   const savedUser: LocalUser = {
     id: existingIndex >= 0 ? users[existingIndex].id : `user-${Date.now()}`,
     name: user.name.trim(),
     email: normalizedEmail,
+    phone: user.phone ? user.phone.trim() : undefined,
     password: user.password,
   };
 
@@ -73,14 +79,16 @@ export async function saveRegisteredUser(user: Omit<LocalUser, 'id'>): Promise<L
 }
 
 export async function verifyRegisteredUser(
-  email: string,
+  identifier: string,
   password: string
 ): Promise<LocalUser | null> {
-  const normalizedEmail = email.trim().toLowerCase();
+  const normalized = identifier.trim().toLowerCase();
   const raw = await AsyncStorage.getItem(REGISTERED_USERS_KEY);
   const users: LocalUser[] = raw ? JSON.parse(raw) : [];
   const found = users.find(
-    (u) => u.email.toLowerCase() === normalizedEmail && u.password === password
+    (u) =>
+      (u.email.toLowerCase() === normalized || (u.phone && u.phone === normalized)) &&
+      u.password === password
   );
   if (found) {
     await AsyncStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(found));

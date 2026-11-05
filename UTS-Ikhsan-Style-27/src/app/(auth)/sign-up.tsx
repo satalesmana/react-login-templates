@@ -15,7 +15,11 @@ import { Logo } from '../../components/configuration/Logo';
 import { FormInput } from '../../components/configuration/FormInput';
 import { LoadingUI } from '../../components/configuration/LoadingUI';
 import { PrimaryButton } from '../../components/button/PrimaryButton';
-import { SocialButton } from '../../components/button/SocialButton';
+import {
+  COUNTRY_LIST,
+  CountryOption,
+  CountrySelector,
+} from '../../components/configuration/CountrySelector';
 import {
   supabase,
   isSupabaseConfigured,
@@ -26,6 +30,8 @@ export default function SignUpScreen() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState<CountryOption>(COUNTRY_LIST[0]);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -35,21 +41,38 @@ export default function SignUpScreen() {
     type: 'error' | 'success';
   } | null>(null);
 
+  const isFormComplete =
+    name.trim().length > 0 &&
+    email.trim().length > 0 &&
+    phoneNumber.trim().length > 0 &&
+    password.length > 0 &&
+    confirmPassword.length > 0 &&
+    acceptedTerms;
+
   function showNotification(message: string, type: 'error' | 'success' = 'error') {
     setNotification({ message, type });
     Alert.alert(type === 'error' ? 'Peringatan' : 'Informasi', message);
   }
 
   async function signUpWithEmail() {
+    if (!isFormComplete) return;
     setNotification(null);
 
-    if (!email.trim()) {
-      showNotification('Tolong Masukkan email anda', 'error');
+    const trimmedEmail = email.trim();
+    const identifierEmail = trimmedEmail
+      ? (trimmedEmail.includes('@') ? trimmedEmail : `${trimmedEmail}@gmail.com`)
+      : '';
+
+    const cleanPhone = phoneNumber.trim().replace(/^0+/, '');
+    const identifierPhone = cleanPhone ? `${selectedCountry.code}${cleanPhone}` : '';
+
+    if (!identifierEmail) {
+      showNotification('Tolong Masukkan email atau nama pengguna anda', 'error');
       return;
     }
 
     if (!password || !confirmPassword || password !== confirmPassword) {
-      showNotification('Tolong masukan password yang sama', 'error');
+      showNotification('Tolong masukkan password yang sama', 'error');
       return;
     }
 
@@ -58,7 +81,8 @@ export default function SignUpScreen() {
       await new Promise((resolve) => setTimeout(resolve, 700));
       await saveRegisteredUser({
         name: name,
-        email: email.trim(),
+        email: identifierEmail,
+        phone: identifierPhone || undefined,
         password: password,
       });
 
@@ -67,11 +91,12 @@ export default function SignUpScreen() {
           data: { session },
           error,
         } = await supabase.auth.signUp({
-          email: email.trim(),
+          email: identifierEmail,
           password: password,
           options: {
             data: {
               full_name: name,
+              phone: identifierPhone || undefined,
             },
           },
         });
@@ -98,6 +123,14 @@ export default function SignUpScreen() {
     }
   }
 
+  function handleBack() {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/sign-in');
+    }
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <LoadingUI visible={loading} message="Mendaftarkan akun..." />
@@ -109,15 +142,19 @@ export default function SignUpScreen() {
           contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingVertical: 16 }}
           showsVerticalScrollIndicator={false}
         >
-          <View className="flex-row justify-between items-center mb-6">
-            <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+          <View className="flex-row justify-between items-center mb-4">
+            <TouchableOpacity onPress={handleBack} className="p-2 -ml-2">
               <FontAwesome name="arrow-left" size={20} color="black" />
             </TouchableOpacity>
             <Logo size="small" variant="outline" />
           </View>
 
           <View className="flex-1 justify-center">
-            <Text className="text-2xl font-bold mb-6">Create your account</Text>
+            {/* Header */}
+            <View className="mb-5">
+              <Text className="text-3xl font-bold text-gray-900">Create your account</Text>
+              <Text className="text-gray-400 text-sm mt-1">Please fill in your details to start</Text>
+            </View>
 
             {notification && (
               <View
@@ -158,21 +195,42 @@ export default function SignUpScreen() {
                 value={name}
                 onChangeText={(text) => setName(text)}
               />
+
               <FormInput
                 label="Email"
-                placeholder="ex: jon.smith@email.com"
+                placeholder="Nama pengguna"
+                suffix="@gmail.com"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
                 onChangeText={(text) => {
-                  setEmail(text);
+                  const cleanText = text.replace(/@gmail\.com$/i, '').trim();
+                  setEmail(cleanText);
                   if (notification) setNotification(null);
                 }}
               />
+
+              <FormInput
+                label="Phone Number"
+                placeholder="812 3456 7890"
+                keyboardType="phone-pad"
+                value={phoneNumber}
+                onChangeText={(text) => {
+                  setPhoneNumber(text);
+                  if (notification) setNotification(null);
+                }}
+                prefix={
+                  <CountrySelector
+                    selectedCountry={selectedCountry}
+                    onSelect={setSelectedCountry}
+                  />
+                }
+              />
+
               <FormInput
                 label="Password"
-                placeholder="*********"
-                secureTextEntry
+                placeholder="••••••••••••"
+                isPassword
                 autoCapitalize="none"
                 value={password}
                 onChangeText={(text) => {
@@ -180,10 +238,11 @@ export default function SignUpScreen() {
                   if (notification) setNotification(null);
                 }}
               />
+
               <FormInput
                 label="Confirm password"
-                placeholder="*********"
-                secureTextEntry
+                placeholder="••••••••••••"
+                isPassword
                 autoCapitalize="none"
                 value={confirmPassword}
                 onChangeText={(text) => {
@@ -193,17 +252,17 @@ export default function SignUpScreen() {
               />
             </View>
 
-            <View className="flex-row items-center mb-6 pl-1">
+            <View className="flex-row items-center mb-5 pl-1">
               <TouchableOpacity
                 onPress={() => setAcceptedTerms(!acceptedTerms)}
-                className={`w-4 h-4 border border-primary rounded-sm items-center justify-center mr-2 ${
-                  acceptedTerms ? 'bg-primary' : 'bg-white'
+                className={`w-4 h-4 border rounded-sm items-center justify-center mr-2 ${
+                  acceptedTerms ? 'bg-primary border-primary' : 'bg-gray-200 border-gray-300'
                 }`}
               >
                 {acceptedTerms && <FontAwesome name="check" size={10} color="white" />}
               </TouchableOpacity>
               <Text className="text-gray-500 text-xs">
-                I understood the <Text className="text-primary">terms & policy</Text>.
+                I understood the <Text className="text-primary font-medium">terms & policy</Text>.
               </Text>
             </View>
 
@@ -211,18 +270,24 @@ export default function SignUpScreen() {
               title={loading ? 'SIGNING UP...' : 'SIGN UP'}
               onPress={() => signUpWithEmail()}
               loading={loading}
-              disabled={loading}
+              disabled={!isFormComplete}
             />
 
-            <View className="items-center my-6">
-              <Text className="text-gray-400 text-sm">or sign up with</Text>
+            <View className="items-center my-4">
+              <Text className="text-gray-400 text-xs">or</Text>
             </View>
 
-            <View className="flex-row justify-between mb-8">
-              <SocialButton iconName="google" color="#DB4437" />
-              <SocialButton iconName="facebook" color="#4267B2" />
-              <SocialButton iconName="twitter" color="#1DA1F2" />
-            </View>
+            {/* Continue with Google Button */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => showNotification('Fitur Google Sign-up dalam tahap persiapan', 'error')}
+              className="w-full bg-gray-100 py-3.5 px-4 rounded-full flex-row items-center justify-center mb-4"
+            >
+              <FontAwesome name="google" size={16} color="#DB4437" />
+              <Text className="ml-3 font-semibold text-gray-700 text-sm">
+                Continue with Google
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View className="flex-row justify-center mt-auto pt-4">

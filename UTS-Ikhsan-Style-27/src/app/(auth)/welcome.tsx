@@ -10,7 +10,7 @@ export default function WelcomeScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push('/sign-in');
+      router.replace('/sign-in');
     }, 3000);
     return () => clearTimeout(timer);
   }, []);
@@ -20,7 +20,7 @@ export default function WelcomeScreen() {
       activeOpacity={1} 
       className="flex-1 bg-primary items-center px-6" 
       style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-      onPress={() => router.push('/sign-in')}
+      onPress={() => router.replace('/sign-in')}
     >
       <View className="flex-1 items-center justify-center w-full">
         <Logo size="large" />
