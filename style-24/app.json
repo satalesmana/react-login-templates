@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "style-24",
-    "slug": "style-24",
+    "name": "login-app",
+    "slug": "login-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "style24",
+    "scheme": "loginapp",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
