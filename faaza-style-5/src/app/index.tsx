@@ -1,68 +1,71 @@
-import { useRouter } from "expo-router";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
-import MyButton from "@/components/MyButton";
-import Style5Screen from "@/components/Style5Screen";
+import { useRouter } from 'expo-router';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import MyButton from '@/components/MyButton';
 
 export default function HomeScreen() {
   const router = useRouter();
 
   return (
-    <Style5Screen>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.page}>
-          <View style={styles.heroArea}>
-            <Image
-              source={require("@/assets/images/style5-reading.png")}
-              style={styles.heroImage}
-              resizeMode="contain"
-            />
-          </View>
-
-          <View style={styles.titleArea}>
-            <Text style={styles.title}>Time to work</Text>
-            <Text style={styles.subtitle}>welcome back we missed you</Text>
-          </View>
-
-          <View style={styles.actionArea}>
-            <MyButton
-              btnType="Primary"
-              text="Start"
-              action={() => router.push("/login")}
-            />
-          </View>
+    <View style={styles.container}>
+      <View style={styles.content}>
+        <Image
+          source={require('@/assets/images/style5-reading.png')}
+          style={styles.heroImage}
+          resizeMode="contain"
+        />
+        <Text style={styles.title}>Dompetmu, lebih teratur</Text>
+        <Text style={styles.subtitle}>Masuk atau buat akun untuk mulai mengelola dompet.</Text>
+        <View style={styles.actions}>
+          <MyButton
+            btnType="Primary"
+            text="Login"
+            action={() => router.push('/login')}
+          />
+          <MyButton
+            btnType="Secondary"
+            text="Buat akun"
+            action={() => router.push('/register')}
+          />
         </View>
-      </ScrollView>
-    </Style5Screen>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1 },
-  scrollContent: { flexGrow: 1, alignItems: "center" },
-  page: {
-    flexGrow: 1,
-    width: "100%",
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0d0d1a',
+    padding: 24,
+  },
+  content: {
+    width: '100%',
     maxWidth: 430,
-    minHeight: 650,
-    paddingHorizontal: 28,
+    alignItems: 'center',
   },
-  heroArea: {
-    height: 285,
-    alignItems: "center",
-    justifyContent: "flex-start",
-    marginHorizontal: -28,
+  heroImage: {
+    width: '100%',
+    height: 290,
   },
-  heroImage: { width: "100%", height: 295 },
-  titleArea: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 45,
+  title: {
+    marginTop: 20,
+    color: '#fff',
+    fontSize: 25,
+    fontWeight: '800',
+    textAlign: 'center',
   },
-  title: { color: "#FFFFFF", fontSize: 28, fontWeight: "800" },
-  subtitle: { color: "#C2B5C4", fontSize: 13, marginTop: 7 },
-  actionArea: { marginTop: 95, paddingHorizontal: 14, paddingBottom: 55 },
+  subtitle: {
+    marginTop: 8,
+    marginBottom: 28,
+    color: '#c2b5c4',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  actions: {
+    width: '100%',
+    maxWidth: 320,
+    gap: 12,
+  },
 });

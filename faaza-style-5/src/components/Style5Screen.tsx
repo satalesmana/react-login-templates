@@ -11,6 +11,7 @@ interface Style5ScreenProps {
   setName?: (val: string) => void;
   onPress: () => void;
   loading?: boolean;
+  onSwitch?: () => void;
 }
 
 export default function Style5Screen({
@@ -23,6 +24,7 @@ export default function Style5Screen({
   setName,
   onPress,
   loading = false,
+  onSwitch,
 }: Style5ScreenProps) {
   const isLogin = type === 'login';
 
@@ -78,6 +80,19 @@ export default function Style5Screen({
           <Text style={styles.buttonText}>{isLogin ? 'Sign in' : 'Sign up'}</Text>
         )}
       </TouchableOpacity>
+
+      {onSwitch && (
+        <TouchableOpacity
+          accessibilityRole="button"
+          disabled={loading}
+          onPress={onSwitch}
+          style={styles.switchButton}
+        >
+          <Text style={styles.switchText}>
+            {isLogin ? "Belum punya akun? Daftar" : 'Sudah punya akun? Login'}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -130,5 +145,14 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  switchButton: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  switchText: {
+    color: '#c4b5fd',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

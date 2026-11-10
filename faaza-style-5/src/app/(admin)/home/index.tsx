@@ -1,7 +1,7 @@
 import MyButton from "@/components/MyButton";
-import Style5Screen from "@/components/Style5Screen";
 import { Stack, useRouter } from "expo-router";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, StyleSheet, Text, View } from "react-native";
+import { supabase } from "@/supabaseClient";
 
 const STUDENT_NAME = "Faaza Hamid Hutasoit";
 const STUDENT_CLASS = "ISI KELAS FAAZA";
@@ -9,8 +9,17 @@ const STUDENT_CLASS = "ISI KELAS FAAZA";
 export default function AdminHomeScreen() {
   const router = useRouter();
 
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      Alert.alert("Logout gagal", error.message);
+      return;
+    }
+    router.replace("/login");
+  };
+
   return (
-    <Style5Screen>
+    <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
         <Image
@@ -25,17 +34,18 @@ export default function AdminHomeScreen() {
           <MyButton
             text="Log out"
             btnType="Primary"
-            action={() => router.replace("/login")}
+            action={handleLogout}
           />
         </View>
       </View>
-    </Style5Screen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#0d0d1a",
     paddingHorizontal: 32,
     alignItems: "center",
     justifyContent: "center",
