@@ -14,14 +14,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
-// Desain "Tambah Dompet" (template Paynex) — v5 untuk Style10.
-// Logika Supabase-nya tetap seperti v4 yang sudah terbukti jalan:
+// v6 untuk Style10 — gambar dosen: dompet bukan cuma form Tambah Dompet.
+// Layar ini sekarang 2 bagian:
+//  1) Form "Tambah Dompet" (template Paynex v5, tetap sama)
+//  2) Detail dompet: tap salah satu dompet di "Daftar Dompet Saya" —
+//     tampil saldo terakhir, tombol In (Cash-In, saldo +) / Out
+//     (Cash-Out, saldo -), dan histori transaksi di bawahnya.
+// Logika Supabase tetap seperti v4/v5 yang sudah terbukti jalan:
 // kolom di Table Editor huruf kecil semua (userid, cardbackground,
-// cardcolor), jadi insert pakai nama itu persis. Satu tambahan dari
-// template: chip kategori (Harian / Tabungan / ...) disimpan di kolom
-// `category`. Kalau kolom itu belum ada di tabel, jalankan dulu SQL
-// di sql/tambah-kolom-category.sql di Supabase SQL Editor (sekali saja),
-// baru tes simpan. Tanpa kolom itu, insert akan ditolak.
+// cardcolor, category). Transaksi disimpan di tabel baru
+// `transaksi_dompet` (kolom huruf kecil: userid, dompetid, jenis,
+// amount, note, created_at). Jalankan dulu SQL di
+// sql/transaksi-dompet.sql di Supabase SQL Editor (sekali saja) —
+// file itu juga sudah berisi ALTER kolom category, jadi kalau ALTER
+// v5 kemarin belum ke-Run, sekali Run ini sudah menutup keduanya.
 type Dompet = {
   id: number;
   userid: string;
@@ -30,6 +36,16 @@ type Dompet = {
   cardbackground: string;
   cardcolor: string;
   category?: string | null;
+};
+
+type Transaksi = {
+  id: number;
+  userid: string;
+  dompetid: number;
+  jenis: 'in' | 'out';
+  amount: number;
+  note: string | null;
+  created_at: string;
 };
 
 const DESIGNS = [
@@ -63,6 +79,20 @@ function parseBalance(s: string) {
   return Number.isNaN(n) ? 0 : n;
 }
 
+function formatTanggal(iso: string) {
+  try {
+    return new Date(iso).toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}
+
 export default function DompetScreen() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -77,6 +107,16 @@ export default function DompetScreen() {
   const [design, setDesign] = useState(DESIGNS[0]);
   const [textColor, setTextColor] = useState(TEXT_COLORS[0]);
 
+  // --- Detail dompet + transaksi (v6) ---
+  const [selected, setSelected] = useState<Dompet | null>(null);
+  const [transaksi, setTransaksi] = useState<Transaksi[]>([]);
+  const [txLoading, setTxLoading] = useState(false);
+  const [txJenis, setTxJenis] = useState<'in' | 'out'>('in');
+  const [txAmount, setTxAmount] = useState('');
+  const [txNote, setTxNote] = useState('');
+  const [txSaving, setTxSaving] = useState(false);
+  const [txError, setTxError] = useState('');
+
   async function loadDompet(uid: string) {
     const { data, error } = await supabase
       .from('dompet')
@@ -86,9 +126,26 @@ export default function DompetScreen() {
     if (error) {
       setErrorMsg('Gagal memuat dompet: ' + error.message);
       Alert.alert('Gagal memuat dompet', error.message);
+      return [];
+    }
+    const list = (data ?? []) as Dompet[];
+    setDompet(list);
+    return list;
+  }
+
+  async function loadTransaksi(dompetId: number) {
+    setTxLoading(true);
+    const { data, error } = await supabase
+      .from('transaksi_dompet')
+      .select()
+      .eq('dompetid', dompetId)
+      .order('created_at', { ascending: false });
+    setTxLoading(false);
+    if (error) {
+      setTxError('Gagal memuat histori: ' + error.message);
       return;
     }
-    setDompet((data ?? []) as Dompet[]);
+    setTransaksi((data ?? []) as Transaksi[]);
   }
 
   useEffect(() => {
@@ -132,7 +189,7 @@ export default function DompetScreen() {
     setSaving(false);
     if (error) {
       const hint = error.message.includes('category')
-        ? ' (kolom category belum ada — jalankan dulu sql/tambah-kolom-category.sql di Supabase SQL Editor)'
+        ? ' (kolom category belum ada — jalankan dulu sql/transaksi-dompet.sql di Supabase SQL Editor)'
         : '';
       setErrorMsg('Gagal menyimpan dompet: ' + error.message + hint);
       Alert.alert('Gagal menyimpan dompet', error.message);
@@ -144,6 +201,67 @@ export default function DompetScreen() {
     setDesign(DESIGNS[0]);
     setTextColor(TEXT_COLORS[0]);
     await loadDompet(userId);
+  }
+
+  function handleSelectDompet(item: Dompet) {
+    setSelected(item);
+    setTxError('');
+    setTxAmount('');
+    setTxNote('');
+    setTxJenis('in');
+    loadTransaksi(item.id);
+  }
+
+  async function handleSaveTransaksi() {
+    if (!userId || !selected) return;
+    setTxError('');
+    const amount = parseBalance(txAmount);
+    if (amount <= 0) {
+      Alert.alert('Jumlah tidak valid', 'Isi jumlah transaksi, harus lebih dari 0.');
+      return;
+    }
+    if (txJenis === 'out' && amount > selected.balance) {
+      const msg = 'Saldo tidak cukup. Saldo terakhir ' + formatRupiah(selected.balance) + ', mau keluar ' + formatRupiah(amount) + '.';
+      setTxError(msg);
+      Alert.alert('Saldo tidak cukup', msg);
+      return;
+    }
+    setTxSaving(true);
+    const { error: insertError } = await supabase.from('transaksi_dompet').insert([
+      {
+        userid: userId,
+        dompetid: selected.id,
+        jenis: txJenis,
+        amount,
+        note: txNote.trim() || null,
+      },
+    ]);
+    if (insertError) {
+      setTxSaving(false);
+      const hint = insertError.message.includes('transaksi_dompet')
+        ? ' (tabel transaksi_dompet belum ada — jalankan dulu sql/transaksi-dompet.sql di Supabase SQL Editor)'
+        : '';
+      setTxError('Gagal menyimpan transaksi: ' + insertError.message + hint);
+      Alert.alert('Gagal menyimpan transaksi', insertError.message);
+      return;
+    }
+    const newBalance = txJenis === 'in' ? selected.balance + amount : selected.balance - amount;
+    const { error: updateError } = await supabase
+      .from('dompet')
+      .update({ balance: newBalance })
+      .eq('id', selected.id);
+    setTxSaving(false);
+    if (updateError) {
+      setTxError('Transaksi tercatat, tapi saldo gagal diupdate: ' + updateError.message);
+      Alert.alert('Saldo gagal diupdate', updateError.message);
+      return;
+    }
+    setTxAmount('');
+    setTxNote('');
+    const list = await loadDompet(userId);
+    const updated = list.find((d) => d.id === selected.id);
+    if (updated) setSelected(updated);
+    await loadTransaksi(selected.id);
   }
 
   const balanceValue = parseBalance(balance);
@@ -163,7 +281,6 @@ export default function DompetScreen() {
             <View style={{ width: 26 }} />
           </View>
 
-          {/* Kartu preview — sesuai template */}
           <View style={[styles.cardPreview, { backgroundColor: design.color }]}>
             <View style={styles.cardTop}>
               <View style={styles.cardChipRow}>
@@ -193,7 +310,6 @@ export default function DompetScreen() {
             </View>
           </View>
 
-          {/* Nama Dompet */}
           <View style={styles.labelRow}>
             <Text style={styles.label}>Nama Dompet</Text>
             <Text style={styles.required}>Wajib diisi</Text>
@@ -219,7 +335,6 @@ export default function DompetScreen() {
             ))}
           </View>
 
-          {/* Saldo Awal */}
           <View style={styles.labelRow}>
             <Text style={styles.label}>Saldo Awal</Text>
             <Text style={styles.free}>Bebas Biaya Admin</Text>
@@ -246,7 +361,6 @@ export default function DompetScreen() {
             ))}
           </View>
 
-          {/* Pilihan Desain Kartu */}
           <View style={styles.labelRow}>
             <Text style={styles.label}>Pilihan Desain Kartu</Text>
             <Text style={styles.selectedName}>{design.name}</Text>
@@ -264,7 +378,6 @@ export default function DompetScreen() {
             ))}
           </View>
 
-          {/* Warna Huruf & Aksen */}
           <View style={styles.labelRow}>
             <Text style={styles.label}>Warna Huruf & Aksen</Text>
             <Text style={styles.selectedName}>{textColor.label}</Text>
@@ -284,7 +397,6 @@ export default function DompetScreen() {
             ))}
           </View>
 
-          {/* Integrasi Transaksi Otomatis */}
           <View style={styles.infoBox}>
             <Ionicons name="repeat-outline" size={22} color={Colors.green} />
             <Text style={styles.infoText}>
@@ -308,25 +420,153 @@ export default function DompetScreen() {
 
           {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
 
-          {/* Daftar dompet yang sudah tersimpan — bukti simpan berhasil */}
           <Text style={[styles.label, { marginTop: 28 }]}>Daftar Dompet Saya</Text>
+          <Text style={styles.helper}>Tap salah satu dompet untuk In / Out dan lihat histori.</Text>
           {loading ? (
             <Text style={styles.empty}>Memuat dompet...</Text>
           ) : dompets.length === 0 ? (
             <Text style={styles.empty}>Belum ada dompet. Simpan satu lewat form di atas.</Text>
           ) : (
             dompets.map((item) => (
-              <View
+              <Pressable
                 key={item.id}
-                style={[styles.listCard, { backgroundColor: item.cardbackground }]}>
+                onPress={() => handleSelectDompet(item)}
+                style={[
+                  styles.listCard,
+                  { backgroundColor: item.cardbackground },
+                  selected?.id === item.id && styles.listCardSelected,
+                ]}>
                 <Text style={[styles.listName, { color: item.cardcolor }]}>{item.name}</Text>
                 <Text style={[styles.listSub, { color: item.cardcolor }]}>
                   {item.category ? `${item.category} • ` : ''}
                   {formatRupiah(item.balance)}
                 </Text>
-              </View>
+              </Pressable>
             ))
           )}
+
+          {selected ? (
+            <View style={styles.detailBox}>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Dompet Terpilih</Text>
+                <Pressable onPress={() => setSelected(null)} hitSlop={8}>
+                  <Ionicons name="close" size={22} color={Colors.muted} />
+                </Pressable>
+              </View>
+
+              <View style={[styles.cardPreview, { backgroundColor: selected.cardbackground }]}>
+                <Text style={[styles.cardLabel, { color: selected.cardcolor }]}>
+                  SALDO TERAKHIR
+                </Text>
+                <Text style={[styles.cardBalance, { color: selected.cardcolor }]}>
+                  {formatRupiah(selected.balance)}
+                </Text>
+                <View style={styles.cardBottom}>
+                  <View>
+                    <Text style={[styles.cardLabel, { color: selected.cardcolor }]}>NAMA DOMPET</Text>
+                    <Text style={[styles.cardName, { color: selected.cardcolor }]}>{selected.name}</Text>
+                  </View>
+                  <Text style={[styles.cardNumber, { color: selected.cardcolor }]}>
+                    {selected.category ?? ''}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.txToggle}>
+                <Pressable
+                  onPress={() => setTxJenis('in')}
+                  style={[styles.txToggleBtn, txJenis === 'in' && styles.txInActive]}>
+                  <Text style={[styles.txToggleText, txJenis === 'in' && styles.txToggleTextActive]}>
+                    In — Masuk
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setTxJenis('out')}
+                  style={[styles.txToggleBtn, txJenis === 'out' && styles.txOutActive]}>
+                  <Text style={[styles.txToggleText, txJenis === 'out' && styles.txToggleTextActive]}>
+                    Out — Keluar
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.inputBox}>
+                <Text style={styles.rp}>Rp</Text>
+                <TextInput
+                  style={styles.input}
+                  value={txAmount}
+                  onChangeText={(t) => setTxAmount(t.replace(/[^0-9]/g, ''))}
+                  placeholder="Jumlah, misal 100000"
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={[styles.inputBox, { marginTop: 10 }]}>
+                <Ionicons name="document-text-outline" size={20} color={Colors.muted} />
+                <TextInput
+                  style={styles.input}
+                  value={txNote}
+                  onChangeText={setTxNote}
+                  placeholder="Keterangan (opsional), misal Gaji / Belanja"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <Pressable
+                onPress={handleSaveTransaksi}
+                disabled={txSaving}
+                style={[
+                  styles.saveBtn,
+                  { backgroundColor: txJenis === 'in' ? '#16A34A' : '#DC2626' },
+                  txSaving && { opacity: 0.6 },
+                ]}>
+                <Ionicons
+                  name={txJenis === 'in' ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'}
+                  size={20}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.saveText}>
+                  {txSaving ? 'Menyimpan...' : txJenis === 'in' ? 'Simpan Cash-In' : 'Simpan Cash-Out'}
+                </Text>
+              </Pressable>
+
+              {txError ? <Text style={styles.errorText}>{txError}</Text> : null}
+
+              <Text style={[styles.label, { marginTop: 24 }]}>Histori Transaksi</Text>
+              {txLoading ? (
+                <Text style={styles.empty}>Memuat histori...</Text>
+              ) : transaksi.length === 0 ? (
+                <Text style={styles.empty}>Belum ada transaksi untuk dompet ini.</Text>
+              ) : (
+                transaksi.map((t) => (
+                  <View key={t.id} style={styles.txRow}>
+                    <View
+                      style={[
+                        styles.txBadge,
+                        { backgroundColor: t.jenis === 'in' ? '#DCFCE7' : '#FEE2E2' },
+                      ]}>
+                      <Text
+                        style={[
+                          styles.txBadgeText,
+                          { color: t.jenis === 'in' ? '#166534' : '#991B1B' },
+                        ]}>
+                        {t.jenis === 'in' ? 'IN' : 'OUT'}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.txNote}>{t.note || (t.jenis === 'in' ? 'Cash-In' : 'Cash-Out')}</Text>
+                      <Text style={styles.txDate}>{formatTanggal(t.created_at)}</Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.txAmount,
+                        { color: t.jenis === 'in' ? '#16A34A' : '#DC2626' },
+                      ]}>
+                      {t.jenis === 'in' ? '+' : '-'} {formatRupiah(t.amount)}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </View>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -456,6 +696,38 @@ const styles = StyleSheet.create({
   errorText: { fontFamily: Fonts.regular, fontSize: 13, color: '#CC0000', marginTop: 8, textAlign: 'center' },
   empty: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.muted, marginTop: 8 },
   listCard: { padding: 18, borderRadius: 14, marginTop: 10 },
+  listCardSelected: { borderWidth: 3, borderColor: Colors.text },
   listName: { fontFamily: Fonts.medium, fontSize: 16 },
   listSub: { fontFamily: Fonts.semiBold, fontSize: 18, marginTop: 6 },
+  detailBox: {
+    marginTop: 20,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#F8F8F8',
+  },
+  txToggle: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  txToggleBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#E5E5E5',
+    alignItems: 'center',
+  },
+  txInActive: { backgroundColor: '#16A34A' },
+  txOutActive: { backgroundColor: '#DC2626' },
+  txToggleText: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.text },
+  txToggleTextActive: { color: '#FFFFFF' },
+  txRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  txBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  txBadgeText: { fontFamily: Fonts.semiBold, fontSize: 12 },
+  txNote: { fontFamily: Fonts.medium, fontSize: 14, color: Colors.text },
+  txDate: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.muted, marginTop: 2 },
+  txAmount: { fontFamily: Fonts.semiBold, fontSize: 14 },
 });
