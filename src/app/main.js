@@ -1,6 +1,29 @@
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { supabase } from "../lib/supabase";
 
 export default function MainScreen() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? "");
+    });
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace("/login");
+  };
+
   return (
     <SafeAreaView style={styles.containerMain}>
       <View style={styles.card}>
@@ -17,6 +40,21 @@ export default function MainScreen() {
             Manajemen Informatika - Politeknik LP3I Jakarta
           </Text>
         </View>
+
+        {email ? (
+          <Text style={styles.loginAsText}>Login sebagai: {email}</Text>
+        ) : null}
+
+        <TouchableOpacity
+          style={styles.btnDompet}
+          onPress={() => router.push("/dompet")}
+        >
+          <Text style={styles.btnDompetText}>Dompet Saya</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.btnKeluar} onPress={handleLogout}>
+          <Text style={styles.btnKeluarText}>Keluar</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -62,5 +100,37 @@ const styles = StyleSheet.create({
     borderBottomColor: "#edf2f7",
     paddingBottom: 5,
     marginBottom: 5,
+  },
+  loginAsText: {
+    fontSize: 12,
+    color: "#718096",
+    fontFamily: "Oswald_400Regular",
+    textAlign: "center",
+    marginTop: 15,
+  },
+  btnDompet: {
+    backgroundColor: "#2e8b57",
+    borderRadius: 25,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  btnDompetText: {
+    fontFamily: "Oswald_700Bold",
+    color: "#fff",
+    fontSize: 14,
+  },
+  btnKeluar: {
+    borderWidth: 1,
+    borderColor: "#c53030",
+    borderRadius: 25,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  btnKeluarText: {
+    fontFamily: "Oswald_700Bold",
+    color: "#c53030",
+    fontSize: 14,
   },
 });

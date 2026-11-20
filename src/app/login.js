@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
   Image,
   SafeAreaView,
@@ -7,9 +8,33 @@ import {
   TextInput,
   TouchableOpacity,
 } from "react-native";
+import { supabase } from "../lib/supabase";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      setErrorMessage("Email dan password wajib diisi.");
+      return;
+    }
+    setLoading(true);
+    setErrorMessage("");
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    setLoading(false);
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+    router.replace("/main");
+  };
 
   return (
     <SafeAreaView style={styles.containerLeft}>
@@ -20,6 +45,11 @@ export default function LoginScreen() {
         style={styles.input}
         placeholder="ENTER YOUR EMAIL"
         placeholderTextColor="#a0aec0"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
       />
 
       <Text style={styles.label}>PASSWORD</Text>
@@ -28,17 +58,28 @@ export default function LoginScreen() {
         placeholder="ENTER YOUR PASSWORD"
         secureTextEntry={true}
         placeholderTextColor="#a0aec0"
+        value={password}
+        onChangeText={setPassword}
+        autoCapitalize="none"
+        autoCorrect={false}
       />
 
       <TouchableOpacity>
         <Text style={styles.forgotPassword}>FORGOT PASSWORD?</Text>
       </TouchableOpacity>
 
+      {errorMessage ? (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      ) : null}
+
       <TouchableOpacity
         style={styles.btnSolidFull}
-        onPress={() => router.push("/main")}
+        onPress={handleLogin}
+        disabled={loading}
       >
-        <Text style={styles.btnSolidText}>LOGIN</Text>
+        <Text style={styles.btnSolidText}>
+          {loading ? "LOADING..." : "LOGIN"}
+        </Text>
       </TouchableOpacity>
 
       <Text style={styles.orText}>OR LOGIN WITH</Text>
@@ -124,5 +165,12 @@ const styles = StyleSheet.create({
     fontFamily: "Oswald_700Bold",
     color: "#1a202c",
     fontSize: 14,
+  },
+  errorText: {
+    fontFamily: "Oswald_400Regular",
+    color: "#c53030",
+    fontSize: 12,
+    textAlign: "center",
+    marginBottom: 10,
   },
 });

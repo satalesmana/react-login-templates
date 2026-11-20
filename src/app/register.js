@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
   SafeAreaView,
   StyleSheet,
@@ -7,9 +8,53 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { supabase } from "../lib/supabase";
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleRegister = async () => {
+    if (
+      !firstName.trim() ||
+      !lastName.trim() ||
+      !email.trim() ||
+      !password ||
+      !confirmPassword
+    ) {
+      setErrorMessage("Semua kolom wajib diisi.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMessage("Password dan konfirmasi password tidak sama.");
+      return;
+    }
+    setLoading(true);
+    setErrorMessage("");
+    const { error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: {
+          full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+        },
+      },
+    });
+    setLoading(false);
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+    router.replace("/login");
+  };
 
   return (
     <SafeAreaView style={styles.containerLeft}>
@@ -22,6 +67,10 @@ export default function RegisterScreen() {
             style={styles.input}
             placeholder="JOHN"
             placeholderTextColor="#a0aec0"
+            value={firstName}
+            onChangeText={setFirstName}
+            autoCapitalize="words"
+            autoCorrect={false}
           />
         </View>
         <View style={styles.halfInputContainer}>
@@ -30,6 +79,10 @@ export default function RegisterScreen() {
             style={styles.input}
             placeholder="DOE"
             placeholderTextColor="#a0aec0"
+            value={lastName}
+            onChangeText={setLastName}
+            autoCapitalize="words"
+            autoCorrect={false}
           />
         </View>
       </View>
@@ -39,6 +92,11 @@ export default function RegisterScreen() {
         style={styles.input}
         placeholder="ENTER YOUR EMAIL"
         placeholderTextColor="#a0aec0"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
       />
 
       <Text style={styles.label}>PASSWORD</Text>
@@ -47,6 +105,10 @@ export default function RegisterScreen() {
         placeholder="*********"
         secureTextEntry={true}
         placeholderTextColor="#a0aec0"
+        value={password}
+        onChangeText={setPassword}
+        autoCapitalize="none"
+        autoCorrect={false}
       />
 
       <Text style={styles.label}>CONFIRM PASSWORD</Text>
@@ -55,13 +117,24 @@ export default function RegisterScreen() {
         placeholder="*********"
         secureTextEntry={true}
         placeholderTextColor="#a0aec0"
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        autoCapitalize="none"
+        autoCorrect={false}
       />
+
+      {errorMessage ? (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      ) : null}
 
       <TouchableOpacity
         style={[styles.btnSolidFull, { marginTop: 30 }]}
-        onPress={() => router.push("/login")}
+        onPress={handleRegister}
+        disabled={loading}
       >
-        <Text style={styles.btnSolidText}>CREATE ACCOUNT</Text>
+        <Text style={styles.btnSolidText}>
+          {loading ? "LOADING..." : "CREATE ACCOUNT"}
+        </Text>
       </TouchableOpacity>
 
       <Text style={styles.agreementText}>
@@ -134,4 +207,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   linkText: { color: "#3182ce", textDecorationLine: "underline" },
+  errorText: {
+    fontFamily: "Oswald_400Regular",
+    color: "#c53030",
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 15,
+  },
 });
