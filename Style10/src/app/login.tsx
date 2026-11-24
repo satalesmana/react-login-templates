@@ -43,7 +43,9 @@ export default function LoginScreen() {
       Alert.alert('Login gagal', error.message);
       return;
     }
-    router.replace('/main' as never);
+    // v7: habis login langsung ke Beranda (dashboard), bukan /main lagi.
+    // Main (MiniShop) tetap ada, dibuka lewat tab Profil di Beranda.
+    router.replace('/beranda' as never);
   }
 
   return (

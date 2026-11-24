@@ -14,20 +14,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Fonts } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
-// v6 untuk Style10 — gambar dosen: dompet bukan cuma form Tambah Dompet.
-// Layar ini sekarang 2 bagian:
-//  1) Form "Tambah Dompet" (template Paynex v5, tetap sama)
-//  2) Detail dompet: tap salah satu dompet di "Daftar Dompet Saya" —
-//     tampil saldo terakhir, tombol In (Cash-In, saldo +) / Out
-//     (Cash-Out, saldo -), dan histori transaksi di bawahnya.
-// Logika Supabase tetap seperti v4/v5 yang sudah terbukti jalan:
-// kolom di Table Editor huruf kecil semua (userid, cardbackground,
-// cardcolor, category). Transaksi disimpan di tabel baru
-// `transaksi_dompet` (kolom huruf kecil: userid, dompetid, jenis,
-// amount, note, created_at). Jalankan dulu SQL di
-// sql/transaksi-dompet.sql di Supabase SQL Editor (sekali saja) —
-// file itu juga sudah berisi ALTER kolom category, jadi kalau ALTER
-// v5 kemarin belum ke-Run, sekali Run ini sudah menutup keduanya.
 type Dompet = {
   id: number;
   userid: string;

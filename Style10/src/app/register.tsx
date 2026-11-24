@@ -59,7 +59,8 @@ export default function RegisterScreen() {
       );
       return;
     }
-    router.replace('/main' as never);
+    // v7: habis register langsung ke Beranda (dashboard), bukan /main lagi.
+    router.replace('/beranda' as never);
   }
 
   return (
